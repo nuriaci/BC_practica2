@@ -1,0 +1,78 @@
+{
+    "compiler": {
+        "version": "0.8.26+commit.8a97fa7a"
+    },
+    "language": "Solidity",
+    "output": {
+        "abi": [
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "file",
+                        "type": "string"
+                    }
+                ],
+                "name": "setFileIPFS",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "name": "userFiles",
+                "outputs": [
+                    {
+                        "internalType": "string",
+                        "name": "",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ],
+        "devdoc": {
+            "kind": "dev",
+            "methods": {},
+            "version": 1
+        },
+        "userdoc": {
+            "kind": "user",
+            "methods": {},
+            "version": 1
+        }
+    },
+    "settings": {
+        "compilationTarget": {
+            "contracts/practica2/IpfsStorage.sol": "IpfsStorage"
+        },
+        "evmVersion": "cancun",
+        "libraries": {},
+        "metadata": {
+            "bytecodeHash": "ipfs"
+        },
+        "optimizer": {
+            "enabled": false,
+            "runs": 200
+        },
+        "remappings": []
+    },
+    "sources": {
+        "contracts/practica2/IpfsStorage.sol": {
+            "keccak256": "0x3b59f4f1c9effaddfb315fbac220cff9e85555763aa31c1a2ae6b613a345dcbd",
+            "license": "MIT",
+            "urls": [
+                "bzz-raw://7f007777261c07d13cc499a7e52d59869e47d0264c2190b71a31222a562a93b9",
+                "dweb:/ipfs/QmaCRSZneTBbFoCX4CUZXk73YD1rqqRuuVfiF2hFJiw9ap"
+            ]
+        }
+    },
+    "version": 1
+}
