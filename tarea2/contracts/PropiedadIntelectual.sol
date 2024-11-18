@@ -98,7 +98,7 @@ contract PropiedadIntelectual{
     mapping(uint256 => Disputa[]) public historialDisputas;
 
     // Eventos
-    event registroRealizado(address propietario, string hash_ipfs, string titulo, uint fecha);
+    event registroRealizado(address propietario, string hash_ipfs, string titulo, uint fecha,uint256 tokenId);
     event TransferenciaPropiedad(address indexed antiguoPropietario, address indexed nuevoPropietario, uint256 tokenId, uint fecha);
     event DisputaRegistrada(address indexed reportante, address indexed propietario, uint256 tokenId, string motivo, uint fecha);
 
@@ -113,7 +113,7 @@ function registro (string memory hash_ipfs, string memory titulo, string memory 
 
     uint256 tokenId = nftContract.emitirNFT(msg.sender, uri);//emitir certificado digital
 
-    emit registroRealizado(msg.sender,hash_ipfs,titulo,block.timestamp);//Se emite el evento de registro realizado
+    emit registroRealizado(msg.sender,hash_ipfs,titulo,block.timestamp, tokenId);//Se emite el evento de registro realizado
 }
 
 
