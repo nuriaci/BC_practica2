@@ -1,7 +1,8 @@
 //SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.10;
 
-import "./openzeppelin-contracts/contracts/token/ERC721/ERC721.sol";
+import "./openzeppelin-contracts/token/ERC721/ERC721.sol";
+import "./openzeppelin-contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 
 //Un contrato - tipo ERC-721 que emite el NFT  (Gestion de NFTs)
