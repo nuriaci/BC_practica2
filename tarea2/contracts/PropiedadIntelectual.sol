@@ -8,7 +8,7 @@ import "./openzeppelin-contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 //Un contrato - tipo ERC-721 que emite el NFT  (Gestion de NFTs)
 /*Recompensas en NFT:  el sistema puede emitir un NFT como certificado digital cada vez que un usuario registre un archivo, permitiendo la tokenización de su propiedad intelectual.*/
 contract PropiedadIntelectualNFT  is ERC721URIStorage {
-    uint256 private _tokenIdCounter; // Variable -> cuenta
+    uint256 private _tokenIdCounter = 0; // Variable -> cuenta
     
     // Almacena el permiso de acceso para cada tokenId
     mapping(uint256 => mapping(address => bool)) private _accessList;
@@ -102,76 +102,80 @@ contract PropiedadIntelectual{
     event TransferenciaPropiedad(address indexed antiguoPropietario, address indexed nuevoPropietario, uint256 tokenId, uint fecha);
     event DisputaRegistrada(address indexed reportante, address indexed propietario, uint256 tokenId, string motivo, uint fecha);
 
-/*Registro de Propiedad: Los usuarios pueden registrar un archivo en IPFS, almacenando el hash en la blockchain junto con título, descripción y una marca de tiempo para demostrar la existencia de la obra.*/
-function registro (string memory hash_ipfs, string memory titulo, string memory descripcion) public {
-    require(bytes(hash_ipfs).length > 0, "La longitud del hash es incorrecta");
-    require(bytes(titulo).length > 0, "La longitud del titulo es incorrecta");
-    require(bytes(descripcion).length > 0, "La longitud de la descripcion es incorrecta");
+    constructor(address nftAddress) {
+        nftContract = PropiedadIntelectualNFT(nftAddress); // Inicializa el contrato 
+    }
 
-    Archivo memory nuevoArchivo = Archivo(titulo,descripcion,hash_ipfs,block.timestamp); //Se crea un nuevo archivo
-    archivos[msg.sender].push(nuevoArchivo);
-    string memory uri = string(abi.encodePacked("ipfs://", hash_ipfs));
+    /*Registro de Propiedad: Los usuarios pueden registrar un archivo en IPFS, almacenando el hash en la blockchain junto con título, descripción y una marca de tiempo para demostrar la existencia de la obra.*/
+    function registro (string memory hash_ipfs, string memory titulo, string memory descripcion) public {
+        require(bytes(hash_ipfs).length > 0, "La longitud del hash es incorrecta");
+        require(bytes(titulo).length > 0, "La longitud del titulo es incorrecta");
+        require(bytes(descripcion).length > 0, "La longitud de la descripcion es incorrecta");
 
-    uint256 tokenId = nftContract.emitirNFT(msg.sender,uri);//emitir certificado digital
+        Archivo memory nuevoArchivo = Archivo(titulo,descripcion,hash_ipfs,block.timestamp); //Se crea un nuevo archivo
+        archivos[msg.sender].push(nuevoArchivo);
+        string memory uri = string(abi.encodePacked("ipfs://", hash_ipfs));//Se genera la uri
 
-    emit registroRealizado(msg.sender,hash_ipfs,titulo,block.timestamp, tokenId);//Se emite el evento de registro realizado
-}
+        uint256 tokenId = nftContract.emitirNFT(msg.sender,uri);//emitir certificado digital
+
+        emit registroRealizado(msg.sender,hash_ipfs,titulo,block.timestamp, tokenId);//Se emite el evento de registro realizado
+    }
 
 
-/*Transferencia de Propiedad: Los propietarios pueden transferir sus derechos sobre un archivo a otro usuario, registrando la transacción en la blockchain.*/
-function transferProperty(address nuevoPropietario, uint256 tokenId) public {
-    require(nuevoPropietario != address(0), "El nuevo propietario no puede ser la direccion cero");
-    require(nftContract.ownerOf(tokenId) == msg.sender, "Solo el propietario actual puede transferir la propiedad");
+    /*Transferencia de Propiedad: Los propietarios pueden transferir sus derechos sobre un archivo a otro usuario, registrando la transacción en la blockchain.*/
+    function transferProperty(address nuevoPropietario, uint256 tokenId) public {
+        require(nuevoPropietario != address(0), "El nuevo propietario no puede ser la direccion cero");
+        require(nftContract.ownerOf(tokenId) == msg.sender, "Solo el propietario actual puede transferir la propiedad");
 
-    // Agregar la transferencia al historial
-    historialTransferencias[tokenId].push(Transferencia({
-        antiguoPropietario: msg.sender,
-        nuevoPropietario: nuevoPropietario,
-        fecha: block.timestamp
-    }));
+        // Agregar la transferencia al historial
+        historialTransferencias[tokenId].push(Transferencia({
+            antiguoPropietario: msg.sender,
+            nuevoPropietario: nuevoPropietario,
+            fecha: block.timestamp
+        }));
 
-    nftContract.safeTransferFrom(msg.sender, nuevoPropietario, tokenId);
-    
-    emit TransferenciaPropiedad(msg.sender, nuevoPropietario, tokenId, block.timestamp);
-}
+        nftContract.safeTransferFrom(msg.sender, nuevoPropietario, tokenId);
+        
+        emit TransferenciaPropiedad(msg.sender, nuevoPropietario, tokenId, block.timestamp);
+    }
 
-// Función condecer licencia temporal a un archivo 
-function darLicenciasTemporales(uint256 tokenId, address usuario, uint256 duracionLicencia) public {
-    nftContract.tempLicense(tokenId, usuario, duracionLicencia);
-}
+    // Función condecer licencia temporal a un archivo 
+    function darLicenciasTemporales(uint256 tokenId, address usuario, uint256 duracionLicencia) public {
+        nftContract.tempLicense(tokenId, usuario, duracionLicencia);
+    }
 
-/*Certificación de Registro (Timestamp): Se puede consultar un “certificado” que incluye el hash, título, descripción y fecha de registro, como prueba de propiedad y autenticidad.*/
-function registryCertificate(address propietario, uint fileIndex) public view returns (string memory titulo, string memory descripcion, string memory hash, uint tiempo) {
-    require(fileIndex < archivos[propietario].length, "Indice fuera de rango");
+    /*Certificación de Registro (Timestamp): Se puede consultar un “certificado” que incluye el hash, título, descripción y fecha de registro, como prueba de propiedad y autenticidad.*/
+    function registryCertificate(address propietario, uint fileIndex) public view returns (string memory titulo, string memory descripcion, string memory hash, uint tiempo) {
+        require(fileIndex < archivos[propietario].length, "Indice fuera de rango");
 
-    Archivo storage archivo = archivos[propietario][fileIndex];
-    return (archivo.titulo, archivo.descripcion, archivo.hash, archivo.tiempo);
-}
+        Archivo storage archivo = archivos[propietario][fileIndex];
+        return (archivo.titulo, archivo.descripcion, archivo.hash, archivo.tiempo);
+    }
 
-/*Auditoría de Integridad de Archivos: Permite verificar que el archivo no ha cambiado desde su registro, comparando el hash almacenado con el hash actual.*/
-function fileAudit(address propietario, uint fileIndex, string memory hashActual) public view returns (bool) {
-    require(fileIndex < archivos[propietario].length, "Indice fuera de rango");
+    /*Auditoría de Integridad de Archivos: Permite verificar que el archivo no ha cambiado desde su registro, comparando el hash almacenado con el hash actual.*/
+    function fileAudit(address propietario, uint fileIndex, string memory hashActual) public view returns (bool) {
+        require(fileIndex < archivos[propietario].length, "Indice fuera de rango");
 
-    Archivo storage archivo = archivos[propietario][fileIndex];
-    return keccak256(abi.encodePacked(archivo.hash)) == keccak256(abi.encodePacked(hashActual));
-}
+        Archivo storage archivo = archivos[propietario][fileIndex];
+        return keccak256(abi.encodePacked(archivo.hash)) == keccak256(abi.encodePacked(hashActual));
+    }
 
-/*Historial de Transferencias: Mantiene un historial completo de todas las transferencias de propiedad realizadas para un archivo, útil para rastrear la cadena de propiedad.*/
-function transferHistory(uint256 tokenId) public view returns(Transferencia[] memory) {
-    return historialTransferencias[tokenId];
-}
+    /*Historial de Transferencias: Mantiene un historial completo de todas las transferencias de propiedad realizadas para un archivo, útil para rastrear la cadena de propiedad.*/
+    function transferHistory(uint256 tokenId) public view returns(Transferencia[] memory) {
+        return historialTransferencias[tokenId];
+    }
 
-/*Gestión de Disputas: Los usuarios pueden registrar disputas sobre derechos de autor, notificando al propietario y creando un registro público de la disputa.*/
-function registrarDisputa(uint256 tokenId, string memory motivoDenuncia) public {
-    address propietario = nftContract.ownerOf(tokenId);
-    require(propietario != address(0), "El token no tiene con propietario.");
+    /*Gestión de Disputas: Los usuarios pueden registrar disputas sobre derechos de autor, notificando al propietario y creando un registro público de la disputa.*/
+    function registrarDisputa(uint256 tokenId, string memory motivoDenuncia) public {
+        address propietario = nftContract.ownerOf(tokenId);
+        require(propietario != address(0), "El token no tiene con propietario.");
 
-    historialDisputas[tokenId].push(Disputa({denunciante: msg.sender, motivo: motivoDenuncia, fecha: block.timestamp}));
+        historialDisputas[tokenId].push(Disputa({denunciante: msg.sender, motivo: motivoDenuncia, fecha: block.timestamp}));
 
-    emit DisputaRegistrada(msg.sender, propietario, tokenId, motivoDenuncia , block.timestamp);
-}
+        emit DisputaRegistrada(msg.sender, propietario, tokenId, motivoDenuncia , block.timestamp);
+    }
 
-function verDisputas(uint256 tokenId) public view returns (Disputa[] memory) {
-        return historialDisputas[tokenId];
-}
+    function verDisputas(uint256 tokenId) public view returns (Disputa[] memory) {
+            return historialDisputas[tokenId];
+    }
 }
