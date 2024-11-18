@@ -16,6 +16,11 @@ contract PropiedadIntelectualNFT is ERC721 {
 
     constructor() ERC721("PropiedadIntelectualNFT", "PI_NFT") {}
 
+    // Modificador para operaciones que solo puede realizar el propietario
+    modifier onlyTokenOwner(uint256 tokenId) {
+        require(ownerOf(tokenId) == msg.sender, "Solo el propietario del NFT puede ejecutar esta funcion");
+        _;
+    }   
     // Función para emitir un nuevo NFT y asignarlo al propietario
     function emitirNFT(address propietario, string memory uri) public returns (uint256) {
        _tokenIdCounter++; // // Incrementa el contador para obtener un nuevo ID de token
@@ -25,8 +30,7 @@ contract PropiedadIntelectualNFT is ERC721 {
         return nuevoTokenId;
     }
     /*Control de Acceso: Permite al propietario otorgar permisos de visualización a usuarios específicos sin ceder la propiedad. */
-    function accesoNFT(uint256 tokenId, address usuario) public{
-        require(ownerOf(tokenId) == msg.sender, "Solo el propietario puede dar acceso");//Comprueba si es el propietario del archivo
+    function accesoNFT(uint256 tokenId, address usuario) public onlyTokenOwner(tokenId){
         _accessList[tokenId][usuario] = true; //Otorga permisos de visualizacion
     }
 
@@ -36,8 +40,7 @@ contract PropiedadIntelectualNFT is ERC721 {
     }
 
     // Revocar acceso: Permite al propietario revocar el acceso de un usuario
-    function revocarAcceso(uint256 tokenId, address usuario) public {
-        require(ownerOf(tokenId) == msg.sender, "Solo el propietario puede revocar el acceso");
+    function revocarAcceso(uint256 tokenId, address usuario) public onlyTokenOwner(tokenId){
         _accessList[tokenId][usuario] = false; // Revoca el permiso de acceso
     }
 
@@ -52,8 +55,7 @@ contract PropiedadIntelectualNFT is ERC721 {
     }
 
     /*Licencias Temporales: Los propietarios pueden conceder licencias temporales para dar acceso limitado a sus archivos. La licencia se revoca automáticamente al vencer*/
-    function tempLicense(uint256 tokenId, address usuario, uint duracionLicencia) public {
-        require(ownerOf(tokenId) == msg.sender, "Solo el propietario puede dar acceso limitado");
+    function tempLicense(uint256 tokenId, address usuario, uint duracionLicencia) public onlyTokenOwner(tokenId){
         _licenciasTemporales[tokenId][usuario] = block.timestamp + duracionLicencia; //Se almacena la expiracion de la licencia temporal
         _accessList[tokenId][usuario] = true; //Otorga permisos de visualizacion
     }
@@ -66,10 +68,19 @@ contract PropiedadIntelectualNFT is ERC721 {
         }
     }
 
+    // Revocar acceso temporal de un usuario
+    function revocarLicenciaTemporal(uint256 tokenId, address usuario) public onlyTokenOwner(tokenId){
+        _licenciasTemporales[tokenId][usuario] = 0; // Revoca la licencia temporal
+        _accessList[tokenId][usuario] = false; // Revoca el acceso
+    }
+
 }
 
 
 contract PropiedadIntelectual{
+
+    enum EstadoDisputa { Abierta, Resuelta }
+
 
     struct Archivo {
         string titulo;
@@ -88,8 +99,9 @@ contract PropiedadIntelectual{
         address denunciante;
         string motivo;
         uint256 fecha;
+        EstadoDisputa estado;
     }
-    
+
     PropiedadIntelectualNFT public nftContract;
 
     mapping(address => Archivo[]) public archivos;
@@ -100,6 +112,7 @@ contract PropiedadIntelectual{
     event registroRealizado(address propietario, string hash_ipfs, string titulo, uint fecha);
     event TransferenciaPropiedad(address indexed antiguoPropietario, address indexed nuevoPropietario, uint256 tokenId, uint fecha);
     event DisputaRegistrada(address indexed reportante, address indexed propietario, uint256 tokenId, string motivo, uint fecha);
+    event AuditoriaRealizada(address propietario, uint256 archivoIndex, bool auditSuccess, uint fecha);
 
 /*Registro de Propiedad: Los usuarios pueden registrar un archivo en IPFS, almacenando el hash en la blockchain junto con título, descripción y una marca de tiempo para demostrar la existencia de la obra.*/
 function registro (string memory hash_ipfs, string memory titulo, string memory descripcion, string memory uri) public {
@@ -117,9 +130,9 @@ function registro (string memory hash_ipfs, string memory titulo, string memory 
 
 
 /*Transferencia de Propiedad: Los propietarios pueden transferir sus derechos sobre un archivo a otro usuario, registrando la transacción en la blockchain.*/
-function transferProperty(address nuevoPropietario, uint256 tokenId) public {
+function transferProperty(address nuevoPropietario, uint256 tokenId) public onlyTokenOwner(tokenId){
     require(nuevoPropietario != address(0), "El nuevo propietario no puede ser la direccion cero");
-    require(nftContract.ownerOf(tokenId) == msg.sender, "Solo el propietario actual puede transferir la propiedad");
+    //require(nftContract.ownerOf(tokenId) == msg.sender, "Solo el propietario actual puede transferir la propiedad");
 
     // Agregar la transferencia al historial
     historialTransferencias[tokenId].push(Transferencia({
@@ -133,8 +146,8 @@ function transferProperty(address nuevoPropietario, uint256 tokenId) public {
     emit TransferenciaPropiedad(msg.sender, nuevoPropietario, tokenId, block.timestamp);
 }
 
-// Función condecer licencia temporal a un archivo 
-function darLicenciasTemporales(uint256 tokenId, address usuario, uint256 duracionLicencia) public {
+// Función para condecer licencia temporal a un archivo 
+function darLicenciasTemporales(uint256 tokenId, address usuario, uint256 duracionLicencia) public onlyTokenOwner(tokenId){
     nftContract.tempLicense(tokenId, usuario, duracionLicencia);
 }
 
@@ -151,7 +164,13 @@ function fileAudit(address propietario, uint fileIndex, string memory hashActual
     require(fileIndex < archivos[propietario].length, "Indice fuera de rango");
 
     Archivo storage archivo = archivos[propietario][fileIndex];
-    return keccak256(abi.encodePacked(archivo.hash)) == keccak256(abi.encodePacked(hashActual));
+    // Compara el hash original con el proporcionado
+    bool success = keccak256(abi.encodePacked(archivo.hash)) == keccak256(abi.encodePacked(hashActual));
+    
+    // Emitir un evento de auditoría
+    emit AuditoriaRealizada(propietario, fileIndex, success, block.timestamp);
+    
+    return success;
 }
 
 /*Historial de Transferencias: Mantiene un historial completo de todas las transferencias de propiedad realizadas para un archivo, útil para rastrear la cadena de propiedad.*/
@@ -172,4 +191,15 @@ function registrarDisputa(uint256 tokenId, string memory motivoDenuncia) public 
 function verDisputas(uint256 tokenId) public view returns (Disputa[] memory) {
         return historialDisputas[tokenId];
 }
+
+function resolverDisputa(uint256 tokenId, uint256 indiceDisputa) public {
+    require(indiceDisputa < historialDisputas[tokenId].length, "Indice de disputa invalido");
+    require(msg.sender == nftContract.ownerOf(tokenId), "Solo el propietario puede resolver disputas");
+
+    Disputa storage disputa = historialDisputas[tokenId][indiceDisputa];
+    require(disputa.estado == EstadoDisputa.Abierta, "La disputa ya esta resuelta");
+
+    disputa.estado = EstadoDisputa.Resuelta;
+}
+
 }
