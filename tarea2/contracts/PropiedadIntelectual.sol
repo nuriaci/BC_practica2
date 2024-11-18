@@ -103,15 +103,16 @@ contract PropiedadIntelectual{
     event DisputaRegistrada(address indexed reportante, address indexed propietario, uint256 tokenId, string motivo, uint fecha);
 
 /*Registro de Propiedad: Los usuarios pueden registrar un archivo en IPFS, almacenando el hash en la blockchain junto con título, descripción y una marca de tiempo para demostrar la existencia de la obra.*/
-function registro (string memory hash_ipfs, string memory titulo, string memory descripcion, string memory uri) public {
+function registro (string memory hash_ipfs, string memory titulo, string memory descripcion) public {
     require(bytes(hash_ipfs).length > 0, "La longitud del hash es incorrecta");
     require(bytes(titulo).length > 0, "La longitud del titulo es incorrecta");
     require(bytes(descripcion).length > 0, "La longitud de la descripcion es incorrecta");
 
     Archivo memory nuevoArchivo = Archivo(titulo,descripcion,hash_ipfs,block.timestamp); //Se crea un nuevo archivo
     archivos[msg.sender].push(nuevoArchivo);
+    string memory uri = string(abi.encodePacked("ipfs://", hash_ipfs));
 
-    uint256 tokenId = nftContract.emitirNFT(msg.sender, uri);//emitir certificado digital
+    uint256 tokenId = nftContract.emitirNFT(msg.sender,uri);//emitir certificado digital
 
     emit registroRealizado(msg.sender,hash_ipfs,titulo,block.timestamp, tokenId);//Se emite el evento de registro realizado
 }
