@@ -1,4 +1,4 @@
 const addresses = { 
-        ipfs:"0xf2B1114C644cBb3fF63Bf1dD284c8Cd716e95BE9", 
+        ipfs:"0xDA0bab807633f07f013f94DD0E6A4F96F8742B53", 
     }; 
     export default addresses;

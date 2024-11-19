@@ -3,9 +3,8 @@ import { create } from "kubo-rpc-client"; // Cliente IPFS de Kubo
 import { ethers } from "ethers";
 import { Buffer } from "buffer";
 import { addresses, abis } from "../contracts"; // Contratos
-
-// Constantes globales
-const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000000000000000000000000000";
+import { toast } from 'react-toastify'; // Importar la función de Toastify
+import 'react-toastify/dist/ReactToastify.css'; // Importar los estilos de Toastify
 
 // Proveedor de Ethereum
 const defaultProvider = new ethers.providers.Web3Provider(window.ethereum);
@@ -36,61 +35,11 @@ function UploadFile({ closeModal }) {
         setFile(Buffer(reader.result)); // Convertir el archivo en Buffer para IPFS
       };
 
-      // Leer el archivo como ArrayBuffer
       reader.readAsArrayBuffer(data);
     } else {
-      alert("Por favor selecciona un archivo válido.");
+      toast.error("Por favor selecciona un archivo válido."); // Mostrar error en Toastify
     }
     e.preventDefault();
-  };
-
-  // Verificar si el usuario tiene fondos suficientes para la transacción
-  const checkSufficientGas = async () => {
-    const signer = defaultProvider.getSigner();
-    const balance = await signer.getBalance(); // Obtiene el balance de la cuenta
-
-    // Estimar el gas para la transacción
-    const tx = {
-      from: await signer.getAddress(),
-      to: addresses.ipfs,
-      data: registroContract.interface.encodeFunctionData("registro", ["hash-placeholder", titulo, descripcion]),
-    };
-
-    try {
-      const gasEstimate = await defaultProvider.estimateGas(tx);
-
-      const gasCost = gasEstimate.mul(await defaultProvider.getGasPrice());
-      if (balance.lt(gasCost)) {
-        setErrorMessage("No tienes suficiente saldo para cubrir el gas de la transacción.");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error al estimar el gas:", error);
-      setErrorMessage("Hubo un problema al estimar el gas. Inténtalo nuevamente.");
-      return false;
-    }
-
-    return true;
-  };
-
-  const registrarArchivo = async (hash, titulo, descripcion) => {
-    try {
-      const registroWithSigner = registroContract.connect(defaultProvider.getSigner());
-      const tx = await registroWithSigner.registro(hash, titulo, descripcion);
-      console.log("Transacción enviada:", tx);
-      await tx.wait(); // Esperar la confirmación
-
-      console.log("Transacción confirmada:", tx);
-    } catch (error) {
-      if (error.code === 4001) {
-        // Rechazo de la transacción en MetaMask
-        setErrorMessage("Transacción rechazada por el usuario.");
-      } else {
-        console.error("Error al interactuar con el contrato:", error.message);
-        setErrorMessage("No se pudo registrar el archivo en Ethereum.");
-      }
-      throw new Error("No se pudo registrar el archivo en Ethereum.");
-    }
   };
 
   // Subir archivo a IPFS y registrarlo en Ethereum
@@ -98,7 +47,7 @@ function UploadFile({ closeModal }) {
     e.preventDefault();
 
     if (!file || !titulo || !descripcion) {
-      alert("Por favor completa todos los campos.");
+      toast.error("Por favor completa todos los campos."); // Notificación de error
       return;
     }
 
@@ -106,26 +55,29 @@ function UploadFile({ closeModal }) {
     setErrorMessage(""); // Reiniciar mensajes de error
 
     try {
-      // Verificar si el usuario tiene suficiente saldo para cubrir el gas
-      const hasSufficientGas = await checkSufficientGas();
-      if (!hasSufficientGas) {
-        return; // Detener si no tiene suficiente gas
-      }
+      // Cliente IPFS (conexión a tu nodo local)
+      const client = await create("/ip4/127.0.0.1/tcp/5001"); // Conexión IPFS local
 
-      const client = await create("/ip4/127.0.0.1/tcp/5001"); // Cliente IPFS de Kubo
       const result = await client.add(file);
+      const metadataURI = `ipfs://${result.cid.toString()}`; // Metadata URI
 
-      // Añadir archivo al sistema de archivos del nodo local
-      await client.files.cp(`/ipfs/${result.cid}`, `/${result.cid}`);
-
-      // Registrar el hash IPFS, título y descripción en Ethereum
-      await registrarArchivo(result.cid.toString(), titulo, descripcion);
+      // Registrar el archivo en el contrato de Ethereum
+      const signer = defaultProvider.getSigner();
+      const contratoConSigner = registroContract.connect(signer);
+      const tx = await contratoConSigner.registro(
+        result.cid.toString(), // Hash del archivo IPFS
+        titulo,                 // Título del archivo
+        descripcion,            // Descripción del archivo
+        metadataURI            // URI de metadata del archivo
+      );
+      await tx.wait(); // Esperar confirmación de la transacción
 
       setIpfsHash(result.cid.toString());
-      alert(`Archivo subido y registrado con éxito: ${result.cid.toString()}`);
+      toast.success(`Archivo subido y registrado con éxito: ${result.cid.toString()}`); // Notificación de éxito
       closeModal(); // Cerrar el modal después de subir el archivo
     } catch (error) {
       console.error("Error al subir el archivo:", error.message);
+      toast.error("Hubo un problema al procesar tu solicitud. Inténtalo nuevamente."); // Notificación de error
     } finally {
       setIsUploading(false);
     }
@@ -140,8 +92,8 @@ function UploadFile({ closeModal }) {
         >
           &times;
         </button>
-        <h2 className="text-2xl font-light mb-4">Registrar Archivo</h2>
-        
+        <h2 className="text-2xl font-light mb-4">Registrar archivo</h2>
+
         <form onSubmit={handleSubmit}>
           <input
             type="file"
@@ -176,7 +128,7 @@ function UploadFile({ closeModal }) {
           <p className="mt-4 text-green-600">
             Archivo subido con éxito:{" "}
             <a
-              href={`http://127.0.0.1:5001/ipfs/${ipfsHash}`}
+              href={`https://webui.ipfs.io/#/files/${ipfsHash}`}
               target="_blank"
               rel="noopener noreferrer"
               className="underline text-blue-500"

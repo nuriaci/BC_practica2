@@ -1,10 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.10;
 
-import "./openzeppelin-contracts/token/ERC721/ERC721.sol";
-import "./openzeppelin-contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "./openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "./openzeppelin/contracts/utils/Counters.sol";
+import "./openzeppelin/contracts/access/Ownable.sol";
+import "./openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract PropiedadIntelectual is ERC721URIStorage {
+contract PropiedadIntelectual is ERC721URIStorage, Ownable {
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIds;
+
+    // Base URI required to interact with IPFS
+    string private _baseURIExtended;
+   
     struct Archivo {
         string titulo;
         string descripcion;
@@ -39,28 +47,46 @@ contract PropiedadIntelectual is ERC721URIStorage {
     event DisputaRegistrada(address indexed reportante, address indexed propietario, uint256 tokenId, string motivo, uint fecha);
 
     constructor() ERC721("PropiedadIntelectualNFT", "PI_NFT") {
-        _tokenIdCounter = 0;
+          _setBaseURI("ipfs://");
     }
 
+     // Sets the base URI for the collection
+    function _setBaseURI(string memory baseURI) private {
+        _baseURIExtended = baseURI;
+    }
+
+    // Overrides the default function to enable ERC721URIStorage to get the updated baseURI
+    function _baseURI() internal view override returns (string memory) {
+        return _baseURIExtended;
+    }
+    
     /* ===== Registro de Propiedad ===== */
-    function registro(string memory hash_ipfs, string memory titulo, string memory descripcion) public {
+    function registro(
+    string memory hash_ipfs,
+    string memory titulo,
+    string memory descripcion,
+    string memory metadataURI
+    ) public {
         require(bytes(hash_ipfs).length > 0, "La longitud del hash es incorrecta");
         require(bytes(titulo).length > 0, "La longitud del titulo es incorrecta");
         require(bytes(descripcion).length > 0, "La longitud de la descripcion es incorrecta");
+        require(bytes(metadataURI).length > 0, "La URI de metadata es requerida");
 
         // Crear archivo y registrar
         Archivo memory nuevoArchivo = Archivo(titulo, descripcion, hash_ipfs, block.timestamp);
         archivos[msg.sender].push(nuevoArchivo);
 
-        string memory uri = string(abi.encodePacked("ipfs://", hash_ipfs)); //Se genera la uri
-        // Generar NFT 
-        _tokenIdCounter++; // Incrementa el contador para obtener un nuevo ID de token
-        uint256 tokenId = _tokenIdCounter; // Obtiene el valor actual del contador como nuevo ID
-        _safeMint(msg.sender, tokenId); //Crea un NFT y lo asigna al propietario
-        _setTokenURI(tokenId, uri);//Asigna un URI (identificador de recursos) al token
+        // Generar NFT
+        _tokenIds.increment(); // NFT IDs start at 1
+        uint256 tokenId = _tokenIds.current();
+        _safeMint(msg.sender, tokenId);
 
-        emit RegistroRealizado(msg.sender, hash_ipfs, titulo, block.timestamp, tokenId);//Se emite el evento de registro realizado
+        // Asignar URI de metadata al token
+        _setTokenURI(tokenId, metadataURI);
+
+        emit RegistroRealizado(msg.sender, hash_ipfs, titulo, block.timestamp, tokenId); // Emitir evento de registro
     }
+
 
     /* ===== Control de Acceso ===== */
     //Permite al propietario otorgar permisos de visualización a usuarios específicos sin ceder la propiedad.
@@ -168,6 +194,13 @@ contract PropiedadIntelectual is ERC721URIStorage {
 
     function archivosCount(address propietario) public view returns (uint256) {
         return archivos[propietario].length;
+    }
+
+    function obtenerArchivos (address propietario) public view returns(Archivo[] memory){
+        if (archivos[propietario].length == 0) {
+         revert("No hay archivos registrados para esta direccion.");
+        }
+        return archivos[propietario];
     }
 
 
