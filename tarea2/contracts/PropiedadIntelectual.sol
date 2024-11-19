@@ -131,8 +131,13 @@ contract PropiedadIntelectual{
         require(nuevoPropietario != address(0), "El nuevo propietario no puede ser la direccion cero");
         require(nftContract.ownerOf(tokenId) == msg.sender, "Solo el propietario actual puede transferir la propiedad");
 
-        // Asegurar de que el contrato es aprobado para transferir el token
-        nftContract.approve(address(this), tokenId);
+        //???
+        // Verificar si el contrato ya está aprobado para transferir el token
+        address approvedAddress = nftContract.getApproved(tokenId);
+        if (approvedAddress != address(this)) {
+            // Asegurarse de que el contrato tiene la aprobación para transferir el token
+            nftContract.approve(address(this), tokenId);  // Solo se aprueba si no se había aprobado previamente
+        }
 
         // Agregar la transferencia al historial
         historialTransferencias[tokenId].push(Transferencia({
