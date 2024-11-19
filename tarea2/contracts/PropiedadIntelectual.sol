@@ -57,8 +57,8 @@ contract PropiedadIntelectualNFT  is ERC721URIStorage {
     }
 
     /*Licencias Temporales: Los propietarios pueden conceder licencias temporales para dar acceso limitado a sus archivos. La licencia se revoca automáticamente al vencer*/
-    function tempLicense(uint256 tokenId, address usuario, uint duracionLicencia) public {
-        require(ownerOf(tokenId) == msg.sender, "Solo el propietario puede dar acceso limitado");
+    function tempLicense(uint256 tokenId, address usuario, uint duracionLicencia, address propietario) public {
+        require(ownerOf(tokenId) == propietario, "Solo el propietario puede dar acceso limitado");
         _licenciasTemporales[tokenId][usuario] = block.timestamp + duracionLicencia; //Se almacena la expiracion de la licencia temporal
         _accessList[tokenId][usuario] = true; //Otorga permisos de visualizacion
     }
@@ -105,6 +105,7 @@ contract PropiedadIntelectual{
     event registroRealizado(address propietario, string hash_ipfs, string titulo, uint fecha,uint256 tokenId);
     event TransferenciaPropiedad(address indexed antiguoPropietario, address indexed nuevoPropietario, uint256 tokenId, uint fecha);
     event DisputaRegistrada(address indexed reportante, address indexed propietario, uint256 tokenId, string motivo, uint fecha);
+    event DebugMessage(string message);
     event Debug(address message);
 
     constructor(address nftAddress) {
@@ -134,9 +135,11 @@ contract PropiedadIntelectual{
         //???
         // Verificar si el contrato ya está aprobado para transferir el token
         address approvedAddress = nftContract.getApproved(tokenId);
+        //nftContract.approve(msg.sender, tokenId);  //address(this)??
         if (approvedAddress != address(this)) {
             // Asegurarse de que el contrato tiene la aprobación para transferir el token
             nftContract.approve(address(this), tokenId);  // Solo se aprueba si no se había aprobado previamente
+            emit DebugMessage("Contrato aprobado para transferir el token.");
         }
 
         // Agregar la transferencia al historial
@@ -153,7 +156,12 @@ contract PropiedadIntelectual{
 
     // Función condecer licencia temporal a un archivo 
     function darLicenciasTemporales(uint256 tokenId, address usuario, uint256 duracionLicencia) public {
-        nftContract.tempLicense(tokenId, usuario, duracionLicencia);
+        nftContract.tempLicense(tokenId, usuario, duracionLicencia,msg.sender);
+    }
+
+    /*funcion auxiliar*/
+    function archivosCount(address propietario) public view returns (uint256) {
+        return archivos[propietario].length;
     }
 
     /*Certificación de Registro (Timestamp): Se puede consultar un “certificado” que incluye el hash, título, descripción y fecha de registro, como prueba de propiedad y autenticidad.*/
