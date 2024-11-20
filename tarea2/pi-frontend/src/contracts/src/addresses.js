@@ -1,4 +1,4 @@
-const addresses = { 
-        ipfs:"0xDA0bab807633f07f013f94DD0E6A4F96F8742B53", 
-    }; 
-    export default addresses;
+const addresses = {
+    ipfs: "0xd0F7EBec37572d1dbEB48398D577920808d2A0a0",
+};
+export default addresses;

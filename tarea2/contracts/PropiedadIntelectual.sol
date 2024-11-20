@@ -38,9 +38,8 @@ contract PropiedadIntelectual is ERC721URIStorage {
     event TransferenciaPropiedad(address indexed antiguoPropietario, address indexed nuevoPropietario, uint256 tokenId, uint fecha);
     event DisputaRegistrada(address indexed reportante, address indexed propietario, uint256 tokenId, string motivo, uint fecha);
 
-    constructor() ERC721("PropiedadIntelectualNFT", "PI_NFT") {
-        _tokenIdCounter = 0;
-    }
+    constructor() ERC721("PropiedadIntelectualNFT", "PI_NFT") {}
+
 
     /* ===== Registro de Propiedad ===== */
     function registro(string memory hash_ipfs, string memory titulo, string memory descripcion) public {
