@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
-import UploadFile from "./UploadFile"; // Importamos el componente UploadFile
-import { addresses, abis } from "../contracts"; // Contratos
+import UploadFile from "./UploadFile";
+import RegistrarDisputa from "./RegistrarDisputa";
+import VisualizarDisputas from "./VisualizarDisputas";
+import { addresses, abis } from "../contracts";
 import { ethers } from "ethers";
 import axios from 'axios';
 
@@ -9,15 +11,16 @@ const defaultProvider = new ethers.providers.Web3Provider(window.ethereum);
 
 // Instancia del contrato en Ethereum
 const registroContract = new ethers.Contract(
-  addresses.ipfs, // Dirección del contrato de registro
-  abis.ipfs,      // ABI del contrato de registro
+  addresses.ipfs, // Dirección del contrato
+  abis.ipfs,      // ABI del contrato
   defaultProvider
 );
 
 function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState(""); // Nuevo estado para controlar el tipo de modal
   const [archivos, setArchivos] = useState([]);
-  const [archivosCount, setArchivosCount] = useState(0); // Contador de archivos con testArchivos
+  const [archivosCount, setArchivosCount] = useState(0);
   const [isOwner, setIsOwner] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [errorMessage, setErrorMessage] = useState('');
@@ -25,10 +28,21 @@ function Dashboard() {
 
   // Funciones para navegar por las funcionalidades del dashboard
   const functionalities = [
-    { title: "Subir Archivo", action: () => setIsModalOpen(true) },
-    { title: "Registrar disputas", action: () => alert("Registrar disputas") },
+    { title: "Subir Archivo", action: () => openModal("upload") },
+    { title: "Registrar disputas", action: () => openModal("registrarDisputa") },
     { title: "Historial de Transferencias", action: () => alert("Navegar a transferencias") },
+    { title: "Visualizar disputas", action: () => openModal("visualizarDisputas") },
   ];
+
+  const openModal = (type) => {
+    setModalType(type); // Establecer el tipo de modal
+    setIsModalOpen(true); // Abrir el modal
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setModalType(""); // Resetear el tipo de modal al cerrarlo
+  };
 
   useEffect(() => {
     buscarArchivos();
@@ -41,8 +55,6 @@ function Dashboard() {
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
       const archivos = await registroContract.listarArchivos(address);
-      console.log(archivos);
-
       const archivosProcesados = archivos.map((archivo) => ({
         titulo: archivo[0],
         descripcion: archivo[1],
@@ -51,7 +63,6 @@ function Dashboard() {
       }));
 
       setArchivos(archivosProcesados);
-      console.log("Archivos procesados:", archivosProcesados);
     } catch (error) {
       console.error("Error al obtener los archivos:", error);
     } finally {
@@ -63,7 +74,6 @@ function Dashboard() {
     try {
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
-      console.log(address)
       const totalArchivos = await registroContract.archivosCount(address);
       setArchivosCount(totalArchivos.toNumber());
     } catch (error) {
@@ -109,22 +119,18 @@ function Dashboard() {
     console.log(datosArchivo);
   };
 
-  const closeModal = () => setIsModalOpen(false);
-
   return (
     <div
-      className={`min-h-screen bg-cover bg-center flex flex-col items-center justify-center relative font-sans transition-all duration-300 ${
-        isModalOpen ? "backdrop-blur-sm" : ""
-      }`}
+      className={`min-h-screen bg-cover bg-center flex flex-col items-center justify-center relative font-sans transition-all duration-300 ${isModalOpen ? "backdrop-blur-sm" : ""
+        }`}
       style={{
         backgroundImage: "url('https://wallpapers.com/images/hd/minimalist-blockchain-illustration-sq1y4w1fh5vt0dp2.jpg')",
       }}
     >
       {/* Fondo oscuro detrás del contenido */}
       <div
-        className={`bg-black bg-opacity-60 w-full h-full absolute top-0 left-0 ${
-          isModalOpen ? "opacity-80" : "opacity-60"
-        } transition-opacity duration-300`}
+        className={`bg-black bg-opacity-60 w-full h-full absolute top-0 left-0 ${isModalOpen ? "opacity-80" : "opacity-60"
+          } transition-opacity duration-300`}
       ></div>
 
       <h1 className="relative text-4xl text-white font-bold mb-10 z-10">Gestión de propiedad intelectual</h1>
@@ -161,6 +167,7 @@ function Dashboard() {
                   onClick={() => handleFileClick(archivo)}
                 >
                   {archivo.titulo}
+                  {archivo.tokenId}
                 </li>
               ))}
             </ul>
@@ -169,10 +176,26 @@ function Dashboard() {
       </div>
 
       {/* Modal de Subir Archivo */}
-      {isModalOpen && (
+      {isModalOpen && modalType === "upload" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <UploadFile closeModal={closeModal} />
+          </div>
+        </div>
+      )}
+      {/* Modal de Registrar Disputa */}
+      {isModalOpen && modalType === "registrarDisputa" && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
+            <RegistrarDisputa closeModal={closeModal} />
+          </div>
+        </div>
+      )}
+      {/* Modal de Visualizar Disputas */}
+      {isModalOpen && modalType === "visualizarDisputas" && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
+            <VisualizarDisputas closeModal={closeModal} />
           </div>
         </div>
       )}
