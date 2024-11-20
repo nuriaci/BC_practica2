@@ -23,6 +23,7 @@ const ipfsContract = new ethers.Contract(
     defaultProvider
 );
 
+console.log(ipfsContract)
 //contract = new ethers.Contract(address, abi, defaultProvider);
 
 async function readCurrentUserFile() {
@@ -67,7 +68,7 @@ function App() {
     console.log("TX contract");
     const tx = await ipfsWithSigner.setFileIPFS(hash);
     console.log({ tx });
-
+    console.log(ipfsContract)
     setIpfsHash(hash);
   }
 

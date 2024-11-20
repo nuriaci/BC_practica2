@@ -398,25 +398,6 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "propietario",
-                "type": "address"
-            }
-        ],
-        "name": "archivosCount",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
                 "name": "owner",
                 "type": "address"
             }
@@ -614,6 +595,47 @@
                 "internalType": "bool",
                 "name": "",
                 "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "propietario",
+                "type": "address"
+            }
+        ],
+        "name": "listarArchivos",
+        "outputs": [
+            {
+                "components": [
+                    {
+                        "internalType": "string",
+                        "name": "titulo",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "descripcion",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "hash",
+                        "type": "string"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "tiempo",
+                        "type": "uint256"
+                    }
+                ],
+                "internalType": "struct PropiedadIntelectual.Archivo[]",
+                "name": "",
+                "type": "tuple[]"
             }
         ],
         "stateMutability": "view",
