@@ -74,7 +74,7 @@ function HistorialTransferencias({ closeModal }) {
 
                 {/* Columna izquierda: Formulario */}
                 <div className="w-1/2 pr-4">
-                    <h2 className="text-2xl font-light mb-4">Historial de Transferencias</h2>
+                    <h2 className="text-2xl font-light mb-4">Historial de transferencias</h2>
 
                     <form onSubmit={handleSubmit}>
                         <input
@@ -102,7 +102,7 @@ function HistorialTransferencias({ closeModal }) {
                 <div className="w-1/2 pl-4 border-l border-gray-700">
                     {transferencias.length > 0 && (
                         <>
-                            <h3 className="text-lg font-semibold">Transferencias Encontradas:</h3>
+                            <h3 className="text-lg font-light">Transferencias encontradas:</h3>
                             <ul className="mt-2 space-y-2">
                                 {transferencias.map((transferencia, index) => (
                                     <li key={index} className="bg-gray-700 p-3 rounded text-sm">

@@ -8,6 +8,7 @@ import { ethers } from "ethers";
 import axios from 'axios';
 import { CloudArrowUpIcon, DocumentTextIcon, ListBulletIcon, MagnifyingGlassCircleIcon } from '@heroicons/react/24/outline';
 import HistorialTransferencias from "./HistorialTransferencias";
+import '../styles.css';
 
 // Proveedor de Ethereum
 const defaultProvider = new ethers.providers.Web3Provider(window.ethereum);
@@ -89,32 +90,33 @@ function Dashboard() {
     console.log("Archivo seleccionado:", file);
     console.log("Hash:", file.hash);
     console.log("Token ID:", file.tokenId);
-
+  
     try {
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
-
+  
       // Verificar si el archivo pertenece al usuario
       const esPropietario = await registroContract.verifyMyProperty(file.tokenId);
       console.log(file.tokenId)
-
+  
       // Verificar si el usuario tiene permisos (propietario o compartido)
       const tieneAcceso = esPropietario || (await registroContract.comprobarAcceso(file.tokenId, address));
-
+  
       if (!tieneAcceso) {
-        setErrorMessage('No tienes acceso a este archivo.');
+        setErrorMessage('No eres el propietario o no tienes acceso a este archivo.'); // Mostrar mensaje de error
         return;
       }
-
+  
       // Descargar archivo desde IPFS
       openModal("recursosPropietario")
       setSelectedFile(file); // Actualizar archivo seleccionado
       setErrorMessage(''); // Limpiar mensaje de error
     } catch (error) {
       console.error('Error al procesar el archivo:', error.message);
-      setErrorMessage('Hubo un problema al acceder al archivo.');
+      setErrorMessage('Hubo un problema al acceder al archivo.'); // Mensaje de error
     }
   };
+  
 
 
   return (
@@ -126,30 +128,71 @@ function Dashboard() {
     >
       {/* Fondo oscuro general */}
       <div className="bg-black bg-opacity-50 w-full h-full absolute top-0 left-0"></div>
-
+  
       {/* Opciones principales (3/4 del espacio) */}
-      <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start w-full sm:w-3/4 p-6 gap-6">
-        {functionalities.map((func, index) => (
-          <div
-            key={index}
-            onClick={func.action}
-            className="w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg shadow-lg text-center flex flex-col items-center justify-center cursor-pointer hover:scale-110 transform transition-all duration-300 group"
-          >
-            <div className="text-white text-4xl mb-2">
-              {func.icon} {/* Ícono dinámico */}
+      <div className="relative z-10 flex flex-col w-full sm:w-3/4 p-6 justify-center items-center min-h-screen">
+        {/* Título de la sección */}
+        <h1 className="absolute top-6 left-6 text-white text-2xl sm:text-3xl font-bold">
+          Gestión de propiedad intelectual
+        </h1>
+
+        {/* Contenedor centralizado */}
+        <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-6">
+          {functionalities.map((func, index) => (
+            <div
+              key={index}
+              onClick={func.action}
+              className="group w-32 h-32 sm:w-40 sm:h-40 relative cursor-pointer"
+            >
+              {/* Card con efecto flip */}
+              <div className="flip-card w-full h-full">
+                <div className="flip-inner w-full h-full">
+                  {/* Lado frontal */}
+                  <div className="flip-front bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg shadow-lg text-center flex flex-col items-center justify-center">
+                    <div className="text-white text-4xl mb-2">{func.icon}</div>
+                    <h2 className="text-sm sm:text-md font-semibold text-white">{func.title}</h2>
+                  </div>
+
+                  {/* Lado trasero */}
+                  <div className="flip-back bg-teal-600 rounded-lg shadow-lg text-center flex flex-col items-center justify-center">
+                    <h3 className="text-lg text-white font-bold">¡Haz clic!</h3>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h2 className="text-sm sm:text-md font-semibold text-white group-hover:text-gray-100">{func.title}</h2>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
+
+      {/* Mostrar mensaje de error */}
+      {errorMessage && (
+        <div
+          className="fixed top-4 left-1/3 transform -translate-x-1/2 z-50 opacity-90 animate-fadeInOut"
+        >
+          <div className="bg-red-600 text-white p-4 rounded-md shadow-lg w-full sm:w-96 relative">
+            {errorMessage}
+            {/* Botón para cerrar */}
+            <button
+              onClick={() => setErrorMessage('')} // Cerrar el mensaje de error al hacer clic
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 text-lg"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
+
+
+
+  
       {/* Listado de archivos (1/4 del espacio, largo completo) */}
-      <div className="relative z-10 w-full sm:w-1/4 bg-gray-900 bg-opacity-70 p-4 sm:p-6 text-white min-h-screen flex flex-col">
+      <div className="relative z-10 w-full sm:w-1/4 bg-gray-900 bg-opacity-70 p-4 sm:p-6 text-white max-h-screen flex flex-col">
         <h2 className="text-lg font-light mb-4">Archivos registrados</h2>
         <p className="text-sm mb-4">
           Total de archivos registrados: <span className="font-bold text-teal-400">{archivosCount}</span>
         </p>
-        <div className="overflow-y-auto flex-grow">
+        <div className="overflow-y-auto flex-grow max-h-screen">
           {loading ? (
             <p>Cargando archivos...</p>
           ) : archivos.length === 0 ? (
@@ -176,45 +219,44 @@ function Dashboard() {
         </div>
       </div>
 
-
-      {/* Modal de Subir Archivo */}
+  
+      {/* Modales (Subir archivo, Registrar Disputa, etc.) */}
       {isModalOpen && modalType === "upload" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <UploadFile closeModal={closeModal} />
           </div>
         </div>
       )}
-
-      {/* Modal de Registrar Disputa */}
+  
       {isModalOpen && modalType === "registrarDisputa" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <RegistrarDisputa closeModal={closeModal} />
           </div>
         </div>
       )}
 
-      {/* Modal de Visualizar Disputas */}
+
+  
       {isModalOpen && modalType === "visualizarDisputas" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur ">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <VisualizarDisputas closeModal={closeModal} />
           </div>
         </div>
       )}
-
-      {/* Modal de Recursos Propietario */}
+  
       {isModalOpen && modalType === "recursosPropietario" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <RecursosPropietario closeModal={closeModal} />
           </div>
         </div>
       )}
-      {/* Modal de Historial Transferencias */}
+  
       {isModalOpen && modalType === "historialTransferencias" && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <HistorialTransferencias closeModal={closeModal} />
           </div>
@@ -222,6 +264,7 @@ function Dashboard() {
       )}
     </div>
   );
+  
 }
 
 export default Dashboard;
