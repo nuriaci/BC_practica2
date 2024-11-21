@@ -2,9 +2,11 @@ import React, { useEffect, useState } from "react";
 import UploadFile from "./UploadFile";
 import RegistrarDisputa from "./RegistrarDisputa";
 import VisualizarDisputas from "./VisualizarDisputas";
+import RecursosPropietario from "./RecursosPropietario";
 import { addresses, abis } from "../contracts";
 import { ethers } from "ethers";
 import axios from 'axios';
+import { CloudArrowUpIcon, DocumentTextIcon, ListBulletIcon, MagnifyingGlassCircleIcon } from '@heroicons/react/24/outline';
 
 // Proveedor de Ethereum
 const defaultProvider = new ethers.providers.Web3Provider(window.ethereum);
@@ -28,10 +30,10 @@ function Dashboard() {
 
   // Funciones para navegar por las funcionalidades del dashboard
   const functionalities = [
-    { title: "Subir Archivo", action: () => openModal("upload") },
-    { title: "Registrar disputas", action: () => openModal("registrarDisputa") },
-    { title: "Historial de Transferencias", action: () => alert("Navegar a transferencias") },
-    { title: "Visualizar disputas", action: () => openModal("visualizarDisputas") },
+    { title: "Subir Archivo", action: () => openModal("upload"),  icon: <CloudArrowUpIcon className="w-8 h-8" /> },
+    { title: "Registrar disputas", action: () => openModal("registrarDisputa"), icon: <DocumentTextIcon className="w-8 h-8" /> },
+    { title: "Historial de Transferencias", action: () => alert("Navegar a transferencias"), icon: <ListBulletIcon className="w-8 h-8" />  },
+    { title: "Visualizar disputas", action: () => openModal("visualizarDisputas"), icon: <MagnifyingGlassCircleIcon className="w-8 h-8" /> },
   ];
 
   const openModal = (type) => {
@@ -46,7 +48,6 @@ function Dashboard() {
 
   useEffect(() => {
     buscarArchivos();
-    obtenerTestArchivos();
   }, []);
 
   const buscarArchivos = async () => {
@@ -54,12 +55,14 @@ function Dashboard() {
       setLoading(true);
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
-      const archivos = await registroContract.listarArchivos(address);
+      const archivos = await registroContract.listarTodosArchivos();
+      setArchivosCount(archivos.length);
       const archivosProcesados = archivos.map((archivo) => ({
         titulo: archivo[0],
         descripcion: archivo[1],
         hash: archivo[2],
-        tiempo: archivo[3].toString(), // Convertir BigNumber a string
+        tiempo: Number(archivo[3]), 
+        tokenId: Number(archivo[4])
       }));
 
       setArchivos(archivosProcesados);
@@ -70,20 +73,9 @@ function Dashboard() {
     }
   };
 
-  const obtenerTestArchivos = async () => {
-    try {
-      const signer = await defaultProvider.getSigner();
-      const address = await signer.getAddress();
-      const totalArchivos = await registroContract.archivosCount(address);
-      setArchivosCount(totalArchivos.toNumber());
-    } catch (error) {
-      console.error("Error al obtener el número total de archivos:", error);
-    }
-  };
-
   const obtenerArchivoDeIPFS = async (hash) => {
     try {
-      const ipfsURL = `https://ipfs.io/ipfs/${hash}`;
+      const ipfsURL = `http://127.0.0.1:8080/ipfs/${hash}`;
       const response = await axios.get(ipfsURL);
       return response.data;
     } catch (error) {
@@ -92,82 +84,88 @@ function Dashboard() {
     }
   };
 
-  const chequearPropietario = async (tokenId) => {
+  const handleFileClick = async (file) => {
+    console.log("Archivo seleccionado:", file);
+    console.log("Hash:", file.hash);
+    console.log("Token ID:", file.tokenId);
+
     try {
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
-
-      const esMio = await registroContract.verifyMyProperty(tokenId);
-      setIsOwner(esMio);
-
-      if (!esMio) {
-        setErrorMessage('Acceso denegado.');
-      } else {
-        setErrorMessage('');
+  
+      // Verificar si el archivo pertenece al usuario
+      const esPropietario = await registroContract.verifyMyProperty(file.tokenId);
+      console.log(file.tokenId)
+  
+      // Verificar si el usuario tiene permisos (propietario o compartido)
+      const tieneAcceso = esPropietario || (await registroContract.comprobarAcceso(file.tokenId, address));
+  
+      if (!tieneAcceso) {
+        setErrorMessage('No tienes acceso a este archivo.');
+        return;
       }
+  
+      // Descargar archivo desde IPFS
+      openModal("recursosPropietario")
+      setSelectedFile(file); // Actualizar archivo seleccionado
+      setErrorMessage(''); // Limpiar mensaje de error
     } catch (error) {
-      console.error('Error al verificar la propiedad:', error.message);
-      setErrorMessage('Hubo un error al verificar la propiedad.');
+      console.error('Error al procesar el archivo:', error.message);
+      setErrorMessage('Hubo un problema al acceder al archivo.');
     }
   };
-
-  const handleFileClick = async (file) => {
-    setSelectedFile(file);
-    chequearPropietario(file.tokenId);
-
-    const datosArchivo = await obtenerArchivoDeIPFS(file.hash);
-    console.log(datosArchivo);
-  };
+  
 
   return (
     <div
-      className={`min-h-screen bg-cover bg-center flex flex-col items-center justify-center relative font-sans transition-all duration-300 ${isModalOpen ? "backdrop-blur-sm" : ""
-        }`}
+      className="min-h-screen bg-cover bg-center flex flex-col sm:flex-row items-center sm:items-start justify-between relative font-sans transition-all duration-300"
       style={{
         backgroundImage: "url('https://wallpapers.com/images/hd/minimalist-blockchain-illustration-sq1y4w1fh5vt0dp2.jpg')",
       }}
     >
-      {/* Fondo oscuro detrás del contenido */}
-      <div
-        className={`bg-black bg-opacity-60 w-full h-full absolute top-0 left-0 ${isModalOpen ? "opacity-80" : "opacity-60"
-          } transition-opacity duration-300`}
-      ></div>
-
-      <h1 className="relative text-4xl text-white font-bold mb-10 z-10">Gestión de propiedad intelectual</h1>
-
-      <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 z-10">
+      {/* Fondo oscuro general */}
+      <div className="bg-black bg-opacity-50 w-full h-full absolute top-0 left-0"></div>
+  
+      {/* Opciones principales (3/4 del espacio) */}
+      <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start w-full sm:w-3/4 p-6 gap-6">
         {functionalities.map((func, index) => (
           <div
             key={index}
             onClick={func.action}
-            className="bg-teal-600 p-6 rounded-lg shadow-lg text-center cursor-pointer hover:bg-teal-500 hover:scale-105 transform transition-transform duration-300 group"
+            className="w-32 h-32 sm:w-40 sm:h-40 bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg shadow-lg text-center flex flex-col items-center justify-center cursor-pointer hover:scale-110 transform transition-all duration-300 group"
           >
-            <h2 className="text-xl font-semibold text-white group-hover:text-gray-100">{func.title}</h2>
+            <div className="text-white text-4xl mb-2">
+              {func.icon} {/* Ícono dinámico */}
+            </div>
+            <h2 className="text-sm sm:text-md font-semibold text-white group-hover:text-gray-100">{func.title}</h2>
           </div>
         ))}
       </div>
-
-      {/* Contenedor de Archivos */}
-      <div className="w-1/4 p-4 bg-gray-800 text-white">
-        <h2 className="text-xl font-light mb-4">Archivos del actual propietario</h2>
+  
+      {/* Listado de archivos (1/4 del espacio, largo completo) */}
+      <div className="relative z-10 w-full sm:w-1/4 bg-gray-900 bg-opacity-70 p-4 sm:p-6 text-white min-h-screen flex flex-col">
+        <h2 className="text-lg font-light mb-4">Archivos registrados</h2>
         <p className="text-sm mb-4">
           Total de archivos registrados: <span className="font-bold text-teal-400">{archivosCount}</span>
         </p>
-        <div>
+        <div className="overflow-y-auto flex-grow">
           {loading ? (
             <p>Cargando archivos...</p>
           ) : archivos.length === 0 ? (
             <p>No tienes archivos registrados.</p>
           ) : (
-            <ul>
+            <ul className="space-y-4">
               {archivos.map((archivo, index) => (
                 <li
                   key={index}
-                  className="mb-2 cursor-pointer hover:bg-gray-700 p-2 rounded"
+                  className="bg-gray-800 p-3 rounded-md shadow-md hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => handleFileClick(archivo)}
                 >
-                  {archivo.titulo}
-                  {archivo.tokenId}
+                  <h3 className="text-md font-bold">{archivo.titulo}</h3>
+                  <p className="text-sm text-gray-300">{archivo.descripcion}</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Fecha de subida: {new Date(archivo.fecha * 1000).toLocaleString()}
+                  </p>
                 </li>
               ))}
             </ul>
@@ -175,6 +173,7 @@ function Dashboard() {
         </div>
       </div>
 
+  
       {/* Modal de Subir Archivo */}
       {isModalOpen && modalType === "upload" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -183,6 +182,7 @@ function Dashboard() {
           </div>
         </div>
       )}
+  
       {/* Modal de Registrar Disputa */}
       {isModalOpen && modalType === "registrarDisputa" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -191,11 +191,21 @@ function Dashboard() {
           </div>
         </div>
       )}
+  
       {/* Modal de Visualizar Disputas */}
       {isModalOpen && modalType === "visualizarDisputas" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <VisualizarDisputas closeModal={closeModal} />
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Visualizar Disputas */}
+      {isModalOpen && modalType === "recursosPropietario" && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
+            <RecursosPropietario closeModal={closeModal} />
           </div>
         </div>
       )}

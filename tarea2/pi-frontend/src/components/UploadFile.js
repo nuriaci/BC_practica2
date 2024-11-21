@@ -56,10 +56,11 @@ function UploadFile({ closeModal }) {
 
     try {
       // Cliente IPFS (conexión a tu nodo local)
-      const client = await create("/ip4/127.0.0.1/tcp/5002"); // Conexión IPFS local
+      const client = await create("/ip4/127.0.0.1/tcp/5001"); // Conexión IPFS local
 
       const result = await client.add(file);
-      const metadataURI = `ipfs://${result.cid.toString()}`; // Metadata URI
+      
+      await client.files.cp(`/ipfs/${result.cid}`, `/${result.cid}`)
 
       // Registrar el archivo en el contrato de Ethereum
       const signer = defaultProvider.getSigner();
@@ -67,7 +68,7 @@ function UploadFile({ closeModal }) {
       const tx = await contratoConSigner.registro(
         result.cid.toString(), // Hash del archivo IPFS
         titulo,                 // Título del archivo
-        descripcion,            // Descripción del archivo
+        descripcion            // Descripción del archivo
       );
       await tx.wait(); // Esperar confirmación de la transacción
 
