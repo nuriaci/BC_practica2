@@ -230,7 +230,7 @@
         "anonymous": false,
         "inputs": [
             {
-                "indexed": false,
+                "indexed": true,
                 "internalType": "address",
                 "name": "propietario",
                 "type": "address"
@@ -359,50 +359,6 @@
         "inputs": [
             {
                 "internalType": "address",
-                "name": "",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "archivos",
-        "outputs": [
-            {
-                "internalType": "string",
-                "name": "titulo",
-                "type": "string"
-            },
-            {
-                "internalType": "string",
-                "name": "descripcion",
-                "type": "string"
-            },
-            {
-                "internalType": "string",
-                "name": "hash",
-                "type": "string"
-            },
-            {
-                "internalType": "uint256",
-                "name": "tiempo",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
                 "name": "owner",
                 "type": "address"
             }
@@ -492,11 +448,6 @@
                 "type": "address"
             },
             {
-                "internalType": "uint256",
-                "name": "fileIndex",
-                "type": "uint256"
-            },
-            {
                 "internalType": "string",
                 "name": "hashActual",
                 "type": "string"
@@ -527,74 +478,6 @@
                 "internalType": "address",
                 "name": "",
                 "type": "address"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "historialDisputas",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "denunciante",
-                "type": "address"
-            },
-            {
-                "internalType": "string",
-                "name": "motivo",
-                "type": "string"
-            },
-            {
-                "internalType": "uint256",
-                "name": "fecha",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "",
-                "type": "uint256"
-            }
-        ],
-        "name": "historialTransferencias",
-        "outputs": [
-            {
-                "internalType": "address",
-                "name": "antiguoPropietario",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "nuevoPropietario",
-                "type": "address"
-            },
-            {
-                "internalType": "uint256",
-                "name": "fecha",
-                "type": "uint256"
             }
         ],
         "stateMutability": "view",
@@ -810,9 +693,9 @@
                 "type": "address"
             },
             {
-                "internalType": "uint256",
-                "name": "fileIndex",
-                "type": "uint256"
+                "internalType": "string",
+                "name": "hashActual",
+                "type": "string"
             }
         ],
         "name": "registryCertificate",
@@ -1114,49 +997,6 @@
             }
         ],
         "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            }
-        ],
-        "name": "verifyMyProperty",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "uint256",
-                "name": "tokenId",
-                "type": "uint256"
-            },
-            {
-                "internalType": "address",
-                "name": "usuario",
-                "type": "address"
-            }
-        ],
-        "name": "verifyProperty",
-        "outputs": [
-            {
-                "internalType": "bool",
-                "name": "",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
         "type": "function"
     }
 ]
