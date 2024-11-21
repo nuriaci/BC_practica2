@@ -138,19 +138,41 @@ contract PropiedadIntelectual is ERC721URIStorage {
     }
 
     /* ===== Auditoría y Certificación ===== */
-    function registryCertificate(address propietario, uint fileIndex) public view returns (string memory titulo, string memory descripcion, string memory hash, uint tiempo) {
+    
+    function registryCertificate(address propietario, string memory hashActual) public view returns (string memory titulo, string memory descripcion, string memory hash, uint tiempo) {
         require(msg.sender == propietario, "Solo el propietario puede consultar el certificado");
-        require(fileIndex < archivos[propietario].length, "Indice fuera de rango");
-        Archivo storage archivo = archivos[propietario][fileIndex];
-        return (archivo.titulo, archivo.descripcion, archivo.hash, archivo.tiempo);
+
+        // Recorre todos los archivos del propietario dado
+        for (uint i = 0; i < archivos[propietario].length; i++) {
+            Archivo storage archivo = archivos[propietario][i];
+
+            // Compara el hash del archivo almacenado con el hash actual proporcionado
+            if (keccak256(abi.encodePacked(archivo.hash)) == keccak256(abi.encodePacked(hashActual))) {
+                // Si hay coincidencia, devuelve los detalles del archivo
+                return (archivo.titulo, archivo.descripcion, archivo.hash, archivo.tiempo);
+            }
+        }
+
+        revert("Archivo con el hash proporcionado no encontrado para este propietario");
     }
 
-    function fileAudit(address propietario, uint fileIndex, string memory hashActual) public view returns (bool) {
-        require(msg.sender == propietario, "Solo el propietario puede auditar este archivo");
-        require(fileIndex < archivos[propietario].length, "Indice fuera de rango");
-        Archivo storage archivo = archivos[propietario][fileIndex];
-        return keccak256(abi.encodePacked(archivo.hash)) == keccak256(abi.encodePacked(hashActual));
+
+    function fileAudit(address propietario, string memory hashActual) public view returns (bool) {
+    require(msg.sender == propietario, "Solo el propietario puede auditar este archivo");
+    
+    // Recorre todos los archivos del propietario
+    for (uint i = 0; i < archivos[propietario].length; i++) {
+        Archivo storage archivo = archivos[propietario][i];
+        
+        // Compara el hash del archivo almacenado con el hash actual proporcionado
+        if (keccak256(abi.encodePacked(archivo.hash)) == keccak256(abi.encodePacked(hashActual))) {
+            return true; // Si hay coincidencia, retorna verdadero
+        }
     }
+    
+    return false; // Si no se encuentra el archivo con ese hash, retorna falso
+}
+
 
     /* ===== Gestión de Disputas ===== */
     function registrarDisputa(uint256 tokenId, string memory motivoDenuncia) public {
