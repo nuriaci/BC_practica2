@@ -7,6 +7,7 @@ import { addresses, abis } from "../contracts";
 import { ethers } from "ethers";
 import axios from 'axios';
 import { CloudArrowUpIcon, DocumentTextIcon, ListBulletIcon, MagnifyingGlassCircleIcon } from '@heroicons/react/24/outline';
+import HistorialTransferencias from "./HistorialTransferencias";
 
 // Proveedor de Ethereum
 const defaultProvider = new ethers.providers.Web3Provider(window.ethereum);
@@ -30,9 +31,9 @@ function Dashboard() {
 
   // Funciones para navegar por las funcionalidades del dashboard
   const functionalities = [
-    { title: "Subir Archivo", action: () => openModal("upload"),  icon: <CloudArrowUpIcon className="w-8 h-8" /> },
+    { title: "Subir Archivo", action: () => openModal("upload"), icon: <CloudArrowUpIcon className="w-8 h-8" /> },
     { title: "Registrar disputas", action: () => openModal("registrarDisputa"), icon: <DocumentTextIcon className="w-8 h-8" /> },
-    { title: "Historial de Transferencias", action: () => alert("Navegar a transferencias"), icon: <ListBulletIcon className="w-8 h-8" />  },
+    { title: "Historial de Transferencias", action: () => openModal("historialTransferencias"), icon: <ListBulletIcon className="w-8 h-8" /> },
     { title: "Visualizar disputas", action: () => openModal("visualizarDisputas"), icon: <MagnifyingGlassCircleIcon className="w-8 h-8" /> },
   ];
 
@@ -61,7 +62,7 @@ function Dashboard() {
         titulo: archivo[0],
         descripcion: archivo[1],
         hash: archivo[2],
-        tiempo: Number(archivo[3]), 
+        fecha: Number(archivo[3]),
         tokenId: Number(archivo[4])
       }));
 
@@ -92,19 +93,19 @@ function Dashboard() {
     try {
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
-  
+
       // Verificar si el archivo pertenece al usuario
       const esPropietario = await registroContract.verifyMyProperty(file.tokenId);
       console.log(file.tokenId)
-  
+
       // Verificar si el usuario tiene permisos (propietario o compartido)
       const tieneAcceso = esPropietario || (await registroContract.comprobarAcceso(file.tokenId, address));
-  
+
       if (!tieneAcceso) {
         setErrorMessage('No tienes acceso a este archivo.');
         return;
       }
-  
+
       // Descargar archivo desde IPFS
       openModal("recursosPropietario")
       setSelectedFile(file); // Actualizar archivo seleccionado
@@ -114,7 +115,7 @@ function Dashboard() {
       setErrorMessage('Hubo un problema al acceder al archivo.');
     }
   };
-  
+
 
   return (
     <div
@@ -125,7 +126,7 @@ function Dashboard() {
     >
       {/* Fondo oscuro general */}
       <div className="bg-black bg-opacity-50 w-full h-full absolute top-0 left-0"></div>
-  
+
       {/* Opciones principales (3/4 del espacio) */}
       <div className="relative z-10 flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start w-full sm:w-3/4 p-6 gap-6">
         {functionalities.map((func, index) => (
@@ -141,7 +142,7 @@ function Dashboard() {
           </div>
         ))}
       </div>
-  
+
       {/* Listado de archivos (1/4 del espacio, largo completo) */}
       <div className="relative z-10 w-full sm:w-1/4 bg-gray-900 bg-opacity-70 p-4 sm:p-6 text-white min-h-screen flex flex-col">
         <h2 className="text-lg font-light mb-4">Archivos registrados</h2>
@@ -164,7 +165,9 @@ function Dashboard() {
                   <h3 className="text-md font-bold">{archivo.titulo}</h3>
                   <p className="text-sm text-gray-300">{archivo.descripcion}</p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Fecha de subida: {new Date(archivo.fecha * 1000).toLocaleString()}
+                    Fecha de subida: {archivo.fecha ? new Date(archivo.fecha * 1000).toLocaleString() : 'Fecha no disponible'}
+                    <p className="text-xs text-gray-500 mt-2"></p>
+                    TokenId: {archivo.tokenId}
                   </p>
                 </li>
               ))}
@@ -173,7 +176,7 @@ function Dashboard() {
         </div>
       </div>
 
-  
+
       {/* Modal de Subir Archivo */}
       {isModalOpen && modalType === "upload" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -182,7 +185,7 @@ function Dashboard() {
           </div>
         </div>
       )}
-  
+
       {/* Modal de Registrar Disputa */}
       {isModalOpen && modalType === "registrarDisputa" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -191,7 +194,7 @@ function Dashboard() {
           </div>
         </div>
       )}
-  
+
       {/* Modal de Visualizar Disputas */}
       {isModalOpen && modalType === "visualizarDisputas" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -201,11 +204,19 @@ function Dashboard() {
         </div>
       )}
 
-      {/* Modal de Visualizar Disputas */}
+      {/* Modal de Recursos Propietario */}
       {isModalOpen && modalType === "recursosPropietario" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
             <RecursosPropietario closeModal={closeModal} />
+          </div>
+        </div>
+      )}
+      {/* Modal de Historial Transferencias */}
+      {isModalOpen && modalType === "historialTransferencias" && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
+            <HistorialTransferencias closeModal={closeModal} />
           </div>
         </div>
       )}

@@ -18,83 +18,367 @@ function RecursosPropietario({ closeModal }) {
   const [nuevoPropietario, setNuevoPropietario] = useState("");
   const [tokenId, setTokenId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  /*Dar licencia temporal */
+  const [direccionUsuario, setDireccionUsuario] = useState("");
+  const [duration, setDuration] = useState("");
+  /* Proporcionar acceso */
+  const [usuarioAcceso, setUsuarioAcceso] = useState("");
+  /* Revocar acceso */
+  const [usuarioRevocar, setUsuarioRevocar] = useState("");
+  /* Auditar archivo */
+  const [fileIndex, setFileIndex] = useState("");
+  const [hashActual, setHashActual] = useState("");
+  /* Consultar certificado */
+  const [fileIndexCertificado, setFileIndexCertificado] = useState("");
+  const [certificado, setCertificado] = useState(null);
 
   const functionalities = [
-    { title: "Transferir propiedad", action: () => setActiveOption("transferir") , icon: <ArrowsRightLeftIcon className="w-8 h-8" /> },
-    { title: "Proporcionar acceso", action: () => setActiveOption("acceso") , icon: <CheckCircleIcon className="w-8 h-8" /> },
-    { title: "Revocar acceso", action: () => setActiveOption("revocar") , icon: <XCircleIcon className="w-8 h-8" /> },
-    { title: "Consultar certificado", action: () => setActiveOption("consultar") , icon: <DocumentMagnifyingGlassIcon className="w-8 h-8" /> },
-    { title: "Auditar archivo", action: () => setActiveOption("auditar") , icon: <FingerPrintIcon className="w-8 h-8" /> },
-    { title: "Dar licencia temporal", action: () => setActiveOption("licencia") , icon: <ClockIcon className="w-8 h-8" /> },
+    { title: "Transferir propiedad", action: () => setActiveOption("transferir"), icon: <ArrowsRightLeftIcon className="w-8 h-8" /> },
+    { title: "Proporcionar acceso", action: () => setActiveOption("acceso"), icon: <CheckCircleIcon className="w-8 h-8" /> },
+    { title: "Revocar acceso", action: () => setActiveOption("revocar"), icon: <XCircleIcon className="w-8 h-8" /> },
+    { title: "Consultar certificado", action: () => setActiveOption("consultar"), icon: <DocumentMagnifyingGlassIcon className="w-8 h-8" /> },
+    { title: "Auditar archivo", action: () => setActiveOption("auditar"), icon: <FingerPrintIcon className="w-8 h-8" /> },
+    { title: "Dar licencia temporal", action: () => setActiveOption("licencia"), icon: <ClockIcon className="w-8 h-8" /> },
   ];
 
+
+  /*Transferir propiedad */
   const transferirPropiedad = async (e) => {
     e.preventDefault();
 
     if (!nuevoPropietario || !tokenId) {
-        return;
+      return;
     }
 
     setErrorMessage("");
     try {
-        const signer = defaultProvider.getSigner();
-        const contratoConSigner = propietarioContract.connect(signer);
+      const signer = defaultProvider.getSigner();
+      const contratoConSigner = propietarioContract.connect(signer);
 
-        const tx = await contratoConSigner.transferProperty(
-            nuevoPropietario,
-            tokenId
-        );
-        await tx.wait();
+      const tx = await contratoConSigner.transferProperty(
+        nuevoPropietario,
+        tokenId
+      );
+      await tx.wait();
 
 
-    } catch (error){
+    } catch (error) {
       console.error("Error al transferir la propiedad:", error.message);
     }
   }
+
+  /*Dar Licencia temporal */
+  const darLicenciaTemporal = async (e) => {
+    e.preventDefault();
+
+    if (!tokenId || !direccionUsuario || !duration) {
+      setErrorMessage("Por favor, complete todos los campos.");
+      return;
+    }
+
+    setErrorMessage("");
+    try {
+      const signer = defaultProvider.getSigner();
+      const contratoConSigner = propietarioContract.connect(signer);
+
+      const tx = await contratoConSigner.darLicenciaTemporal(tokenId, direccionUsuario, duration);
+      await tx.wait();
+
+      alert("Licencia temporal otorgada con éxito");
+    } catch (error) {
+      console.error("Error al dar la licencia temporal:", error.message);
+      setErrorMessage("Error al dar la licencia temporal");
+    }
+  };
+  /* Proporcionar acceso */
+  const proporcionarAcceso = async (e) => {
+    e.preventDefault();
+
+    if (!tokenId || !usuarioAcceso) {
+      setErrorMessage("Por favor, complete todos los campos.");
+      return;
+    }
+
+    setErrorMessage("");
+    try {
+      const signer = defaultProvider.getSigner();
+      const contratoConSigner = propietarioContract.connect(signer);
+
+      const tx = await contratoConSigner.accesoNFT(tokenId, usuarioAcceso);
+      await tx.wait();
+
+      alert("Acceso otorgado con éxito");
+    } catch (error) {
+      console.error("Error al proporcionar acceso:", error.message);
+      setErrorMessage("Error al proporcionar acceso");
+    }
+  };
+
+  /* Revocar acceso */
+  const revocarAcceso = async (e) => {
+    e.preventDefault();
+
+    if (!tokenId || !usuarioRevocar) {
+      setErrorMessage("Por favor, complete todos los campos.");
+      return;
+    }
+
+    setErrorMessage("");
+    try {
+      const signer = defaultProvider.getSigner();
+      const contratoConSigner = propietarioContract.connect(signer);
+
+      const tx = await contratoConSigner.revocarAcceso(tokenId, usuarioRevocar);
+      await tx.wait();
+
+      alert("Acceso revocado con éxito");
+    } catch (error) {
+      console.error("Error al revocar el acceso:", error.message);
+      setErrorMessage("Error al revocar el acceso");
+    }
+  };
+
+  /* Auditar archivo */
+  const auditarArchivo = async (e) => {
+    e.preventDefault();
+
+    if (!fileIndex || !hashActual) {
+      setErrorMessage("Por favor, complete todos los campos.");
+      return;
+    }
+
+    setErrorMessage("");
+    try {
+      const signer = defaultProvider.getSigner();
+      const contratoConSigner = propietarioContract.connect(signer);
+
+      const esValido = await contratoConSigner.fileAudit(signer.getAddress(), fileIndex, hashActual);
+
+      if (esValido) {
+        alert("El archivo es válido, no ha sido modificado.");
+      } else {
+        alert("El archivo ha sido modificado.");
+      }
+    } catch (error) {
+      console.error("Error al auditar el archivo:", error.message);
+      setErrorMessage("Error al auditar el archivo");
+    }
+  };
+
+  /* Consultar certificado */
+  const consultarCertificado = async (e) => {
+    e.preventDefault();
+
+    if (!fileIndexCertificado) {
+      setErrorMessage("Por favor, ingrese el índice del archivo.");
+      return;
+    }
+
+    setErrorMessage("");
+    try {
+      const signer = defaultProvider.getSigner();
+      const contratoConSigner = propietarioContract.connect(signer);
+
+      // Llamada al contrato para obtener los detalles del certificado
+      const [titulo, descripcion, hash, tiempo] = await contratoConSigner.registryCertificate(signer.getAddress(), fileIndexCertificado);
+
+      // Guardamos los detalles en el estado
+      setCertificado({ titulo, descripcion, hash, tiempo });
+    } catch (error) {
+      console.error("Error al consultar el certificado:", error.message);
+      setErrorMessage("Error al consultar el certificado. Asegúrate de que el índice sea válido.");
+    }
+  };
+
 
   const renderOptionContent = () => {
     switch (activeOption) {
       case "transferir":
         return (<>
-        <form onSubmit={transferirPropiedad}>
+          <form onSubmit={transferirPropiedad}>
             <input
-                type="text"
-                placeholder="Dirección del nuevo propietario"
-                value={nuevoPropietario}
-                onChange={(e) => setNuevoPropietario(e.target.value)}
-                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
-                required />
+              type="text"
+              placeholder="Dirección del nuevo propietario"
+              value={nuevoPropietario}
+              onChange={(e) => setNuevoPropietario(e.target.value)}
+              className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
+              required />
             <textarea
+              placeholder="Token ID"
+              value={tokenId}
+              onChange={(e) => setTokenId(e.target.value)}
+              className="block w-full text-sm bg-gray-800 text-white p-2 mt-2 rounded"
+              required />
+            <button
+              type="submit"
+              className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
+            >
+              {"probar"}
+            </button>
+          </form></>);
+      case "acceso":
+        return (
+          <>
+            <form onSubmit={proporcionarAcceso}>
+              <input
+                type="text"
                 placeholder="Token ID"
                 value={tokenId}
                 onChange={(e) => setTokenId(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Dirección del usuario"
+                value={usuarioAcceso}
+                onChange={(e) => setUsuarioAcceso(e.target.value)}
                 className="block w-full text-sm bg-gray-800 text-white p-2 mt-2 rounded"
-                required />
-            <button
+                required
+              />
+              <button
                 type="submit"
                 className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
-            >
-                {"probar"}
-            </button>
-        </form></>);
-      case "acceso":
-        return <div>Contenido para Proporcionar acceso</div>;
+              >
+                Proporcionar acceso
+              </button>
+            </form>
+          </>
+        );
       case "revocar":
-        return <div>Contenido para Revocar acceso</div>;
+        return (
+          <>
+            <form onSubmit={revocarAcceso}>
+              <input
+                type="text"
+                placeholder="Token ID"
+                value={tokenId}
+                onChange={(e) => setTokenId(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Dirección del usuario"
+                value={usuarioRevocar}
+                onChange={(e) => setUsuarioRevocar(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-2 rounded"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
+              >
+                Revocar acceso
+              </button>
+            </form>
+          </>
+        );
       case "consultar":
-        return <div>Contenido para Consultar certificado</div>;
+        return (
+          <>
+            <form onSubmit={consultarCertificado}>
+              <input
+                type="text"
+                placeholder="Índice del archivo"
+                value={fileIndexCertificado}
+                onChange={(e) => setFileIndexCertificado(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
+              >
+                Consultar certificado
+              </button>
+            </form>
+            {certificado && (
+              <div className="mt-6 text-white">
+                <h3 className="text-lg font-semibold">Detalles del Certificado</h3>
+                <p><strong>Título:</strong> {certificado.titulo}</p>
+                <p><strong>Descripción:</strong> {certificado.descripcion}</p>
+                <p><strong>Hash:</strong> {certificado.hash}</p>
+                <p><strong>Tiempo:</strong> {new Date(certificado.tiempo * 1000).toLocaleString()}</p>
+              </div>
+            )}
+            {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
+          </>
+        );
       case "auditar":
-        return <div>Contenido para Auditar archivo</div>;
+        return (
+          <>
+            <form onSubmit={auditarArchivo}>
+              <input
+                type="text"
+                placeholder="Índice del archivo"
+                value={fileIndex}
+                onChange={(e) => setFileIndex(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Hash actual del archivo"
+                value={hashActual}
+                onChange={(e) => setHashActual(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-2 rounded"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
+              >
+                Auditar archivo
+              </button>
+            </form>
+          </>
+        );
       case "licencia":
-        return <div>Contenido para Dar licencia temporal</div>;
+        return (
+          <>
+            <form onSubmit={darLicenciaTemporal}>
+              <input
+                type="text"
+                placeholder="Token ID"
+                value={tokenId}
+                onChange={(e) => setTokenId(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
+                required
+              />
+              <input
+                type="text"
+                placeholder="Dirección del usuario"
+                value={direccionUsuario}
+                onChange={(e) => setDireccionUsuario(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-2 rounded"
+                required
+              />
+              <input
+                type="number"
+                placeholder="Duración (en días)"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                className="block w-full text-sm bg-gray-800 text-white p-2 mt-2 rounded"
+                required
+              />
+              <button
+                type="submit"
+                className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
+              >
+                Dar Licencia Temporal
+              </button>
+            </form>
+          </>
+        );
       default:
         return (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-             <button
-                onClick={closeModal}
-                className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 text-lg"
-                >
-                &times;
+            <button
+              onClick={closeModal}
+              className="absolute top-2 right-2 text-gray-400 hover:text-gray-200 text-lg"
+            >
+              &times;
             </button>
             {functionalities.map((func, index) => (
               <div
