@@ -95,7 +95,7 @@ function RecursosPropietario({ closeModal, selectedFile }) {
   /* Proporcionar acceso */
   const proporcionarAcceso = async (e) => {
     e.preventDefault();
-
+    console.log(usuarioAcceso);
     if (!usuarioAcceso) {
       setErrorMessage("Por favor, complete todos los campos.");
       return;
@@ -123,12 +123,13 @@ function RecursosPropietario({ closeModal, selectedFile }) {
   /* Revocar acceso */
   const revocarAcceso = async (e) => {
     e.preventDefault();
+    console.log(usuarioRevocar);
 
     if (!usuarioRevocar) {
       setErrorMessage("Por favor, complete todos los campos.");
       return;
     }
-    if (!ethers.utils.isAddress(usuarioAcceso)) {
+    if (!ethers.utils.isAddress(usuarioRevocar)) {
       setErrorMessage("La dirección proporcionada no es válida.");
       return;
     }
