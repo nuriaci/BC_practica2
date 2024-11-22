@@ -13,10 +13,12 @@ const propietarioContract = new ethers.Contract(
   defaultProvider
 );
 
-function RecursosPropietario({ closeModal }) {
+function RecursosPropietario({ closeModal, selectedFile }) {
+
+  const { tokenId } = selectedFile;
   const [activeOption, setActiveOption] = useState(null);
   const [nuevoPropietario, setNuevoPropietario] = useState("");
-  const [tokenId, setTokenId] = useState("");
+  // const [tokenId, setTokenId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   /*Dar licencia temporal */
   const [direccionUsuario, setDireccionUsuario] = useState("");
@@ -26,10 +28,9 @@ function RecursosPropietario({ closeModal }) {
   /* Revocar acceso */
   const [usuarioRevocar, setUsuarioRevocar] = useState("");
   /* Auditar archivo */
-  const [fileIndex, setFileIndex] = useState("");
   const [hashActual, setHashActual] = useState("");
   /* Consultar certificado */
-  const [fileIndexCertificado, setFileIndexCertificado] = useState("");
+  const [hashActualCertificado, sethashActualCertificado] = useState("");
   const [certificado, setCertificado] = useState(null);
 
   const functionalities = [
@@ -46,7 +47,7 @@ function RecursosPropietario({ closeModal }) {
   const transferirPropiedad = async (e) => {
     e.preventDefault();
 
-    if (!nuevoPropietario || !tokenId) {
+    if (!nuevoPropietario) {
       return;
     }
 
@@ -71,7 +72,7 @@ function RecursosPropietario({ closeModal }) {
   const darLicenciaTemporal = async (e) => {
     e.preventDefault();
 
-    if (!tokenId || !direccionUsuario || !duration) {
+    if (!direccionUsuario || !duration) {
       setErrorMessage("Por favor, complete todos los campos.");
       return;
     }
@@ -94,7 +95,7 @@ function RecursosPropietario({ closeModal }) {
   const proporcionarAcceso = async (e) => {
     e.preventDefault();
 
-    if (!tokenId || !usuarioAcceso) {
+    if (!usuarioAcceso) {
       setErrorMessage("Por favor, complete todos los campos.");
       return;
     }
@@ -118,7 +119,7 @@ function RecursosPropietario({ closeModal }) {
   const revocarAcceso = async (e) => {
     e.preventDefault();
 
-    if (!tokenId || !usuarioRevocar) {
+    if (!usuarioRevocar) {
       setErrorMessage("Por favor, complete todos los campos.");
       return;
     }
@@ -142,7 +143,7 @@ function RecursosPropietario({ closeModal }) {
   const auditarArchivo = async (e) => {
     e.preventDefault();
 
-    if (!fileIndex || !hashActual) {
+    if (!hashActual) {
       setErrorMessage("Por favor, complete todos los campos.");
       return;
     }
@@ -152,7 +153,7 @@ function RecursosPropietario({ closeModal }) {
       const signer = defaultProvider.getSigner();
       const contratoConSigner = propietarioContract.connect(signer);
 
-      const esValido = await contratoConSigner.fileAudit(signer.getAddress(), fileIndex, hashActual);
+      const esValido = await contratoConSigner.fileAudit(signer.getAddress(), hashActual);
 
       if (esValido) {
         alert("El archivo es válido, no ha sido modificado.");
@@ -169,7 +170,7 @@ function RecursosPropietario({ closeModal }) {
   const consultarCertificado = async (e) => {
     e.preventDefault();
 
-    if (!fileIndexCertificado) {
+    if (!hashActualCertificado) {
       setErrorMessage("Por favor, ingrese el índice del archivo.");
       return;
     }
@@ -180,7 +181,7 @@ function RecursosPropietario({ closeModal }) {
       const contratoConSigner = propietarioContract.connect(signer);
 
       // Llamada al contrato para obtener los detalles del certificado
-      const [titulo, descripcion, hash, tiempo] = await contratoConSigner.registryCertificate(signer.getAddress(), fileIndexCertificado);
+      const [titulo, descripcion, hash, tiempo] = await contratoConSigner.registryCertificate(signer.getAddress(), hashActualCertificado);
 
       // Guardamos los detalles en el estado
       setCertificado({ titulo, descripcion, hash, tiempo });
@@ -203,12 +204,6 @@ function RecursosPropietario({ closeModal }) {
               onChange={(e) => setNuevoPropietario(e.target.value)}
               className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
               required />
-            <textarea
-              placeholder="Token ID"
-              value={tokenId}
-              onChange={(e) => setTokenId(e.target.value)}
-              className="block w-full text-sm bg-gray-800 text-white p-2 mt-2 rounded"
-              required />
             <button
               type="submit"
               className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
@@ -220,14 +215,6 @@ function RecursosPropietario({ closeModal }) {
         return (
           <>
             <form onSubmit={proporcionarAcceso}>
-              <input
-                type="text"
-                placeholder="Token ID"
-                value={tokenId}
-                onChange={(e) => setTokenId(e.target.value)}
-                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
-                required
-              />
               <input
                 type="text"
                 placeholder="Dirección del usuario"
@@ -251,14 +238,6 @@ function RecursosPropietario({ closeModal }) {
             <form onSubmit={revocarAcceso}>
               <input
                 type="text"
-                placeholder="Token ID"
-                value={tokenId}
-                onChange={(e) => setTokenId(e.target.value)}
-                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
-                required
-              />
-              <input
-                type="text"
                 placeholder="Dirección del usuario"
                 value={usuarioRevocar}
                 onChange={(e) => setUsuarioRevocar(e.target.value)}
@@ -280,9 +259,9 @@ function RecursosPropietario({ closeModal }) {
             <form onSubmit={consultarCertificado}>
               <input
                 type="text"
-                placeholder="Índice del archivo"
-                value={fileIndexCertificado}
-                onChange={(e) => setFileIndexCertificado(e.target.value)}
+                placeholder="Hash del archivo"
+                value={hashActualCertificado}
+                onChange={(e) => sethashActualCertificado(e.target.value)}
                 className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
                 required
               />
@@ -311,14 +290,6 @@ function RecursosPropietario({ closeModal }) {
             <form onSubmit={auditarArchivo}>
               <input
                 type="text"
-                placeholder="Índice del archivo"
-                value={fileIndex}
-                onChange={(e) => setFileIndex(e.target.value)}
-                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
-                required
-              />
-              <input
-                type="text"
                 placeholder="Hash actual del archivo"
                 value={hashActual}
                 onChange={(e) => setHashActual(e.target.value)}
@@ -338,14 +309,6 @@ function RecursosPropietario({ closeModal }) {
         return (
           <>
             <form onSubmit={darLicenciaTemporal}>
-              <input
-                type="text"
-                placeholder="Token ID"
-                value={tokenId}
-                onChange={(e) => setTokenId(e.target.value)}
-                className="block w-full text-sm bg-gray-800 text-white p-2 mt-4 rounded"
-                required
-              />
               <input
                 type="text"
                 placeholder="Dirección del usuario"

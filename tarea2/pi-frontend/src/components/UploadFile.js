@@ -56,7 +56,7 @@ function UploadFile({ closeModal }) {
 
     try {
       // Cliente IPFS (conexión a tu nodo local)
-      const client = await create("/ip4/127.0.0.1/tcp/5001"); // Conexión IPFS local
+      const client = await create("/ip4/127.0.0.1/tcp/5002"); // Conexión IPFS local
 
       const result = await client.add(file);
 

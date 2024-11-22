@@ -57,17 +57,31 @@ function Dashboard() {
       setLoading(true);
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
+
+      // Obtener todos los archivos desde el contrato
       const archivos = await registroContract.listarTodosArchivos();
       setArchivosCount(archivos.length);
-      const archivosProcesados = archivos.map((archivo) => ({
-        titulo: archivo[0],
-        descripcion: archivo[1],
-        hash: archivo[2],
-        fecha: Number(archivo[3]),
-        tokenId: Number(archivo[4])
-      }));
 
-      setArchivos(archivosProcesados);
+      // Procesar los archivos y verificar si el usuario tiene acceso
+      const archivosProcesados = await Promise.all(
+        archivos.map(async (archivo) => {
+          const esPropietario = await registroContract.verifyMyProperty(archivo[4]);
+          console.log(esPropietario);
+          const tieneAcceso = esPropietario || (await registroContract.comprobarAcceso(archivo[4], address));
+          const direccionPropietario = await registroContract.ownerOf(archivo[4]);
+          return {
+            titulo: archivo[0],
+            descripcion: archivo[1],
+            hash: archivo[2],
+            fecha: Number(archivo[3]),
+            tokenId: Number(archivo[4]),
+            tieneAcceso: tieneAcceso,
+            direccionPropietario: direccionPropietario,
+          };
+        })
+      );
+
+      setArchivos(archivosProcesados); // Establecer los archivos procesados con acceso
     } catch (error) {
       console.error("Error al obtener los archivos:", error);
     } finally {
@@ -90,23 +104,23 @@ function Dashboard() {
     console.log("Archivo seleccionado:", file);
     console.log("Hash:", file.hash);
     console.log("Token ID:", file.tokenId);
-  
+
     try {
       const signer = await defaultProvider.getSigner();
       const address = await signer.getAddress();
-  
+
       // Verificar si el archivo pertenece al usuario
-      const esPropietario = await registroContract.verifyMyProperty(file.tokenId);
+      const esPropietario = await registroContract.verifyProperty(file.tokenId, address);
       console.log(file.tokenId)
-  
+
       // Verificar si el usuario tiene permisos (propietario o compartido)
-      const tieneAcceso = esPropietario || (await registroContract.comprobarAcceso(file.tokenId, address));
-  
+      const tieneAcceso = esPropietario;
+
       if (!tieneAcceso) {
-        setErrorMessage('No eres el propietario o no tienes acceso a este archivo.'); // Mostrar mensaje de error
+        setErrorMessage('No eres el propietario.'); // Mostrar mensaje de error
         return;
       }
-  
+
       // Descargar archivo desde IPFS
       openModal("recursosPropietario")
       setSelectedFile(file); // Actualizar archivo seleccionado
@@ -116,7 +130,7 @@ function Dashboard() {
       setErrorMessage('Hubo un problema al acceder al archivo.'); // Mensaje de error
     }
   };
-  
+
 
 
   return (
@@ -128,7 +142,7 @@ function Dashboard() {
     >
       {/* Fondo oscuro general */}
       <div className="bg-black bg-opacity-50 w-full h-full absolute top-0 left-0"></div>
-  
+
       {/* Opciones principales (3/4 del espacio) */}
       <div className="relative z-10 flex flex-col w-full sm:w-3/4 p-6 justify-center items-center min-h-screen">
         {/* Título de la sección */}
@@ -154,9 +168,33 @@ function Dashboard() {
                   </div>
 
                   {/* Lado trasero */}
-                  <div className="flip-back bg-teal-600 rounded-lg shadow-lg text-center flex flex-col items-center justify-center">
-                    <h3 className="text-lg text-white font-bold">¡Haz clic!</h3>
+                  <div className="flip-card w-full h-full">
+                    <div className="flip-inner w-full h-full">
+                      {/* Lado frontal */}
+                      <div className="flip-front bg-gradient-to-br from-teal-500 to-teal-700 rounded-lg shadow-lg text-center flex flex-col items-center justify-center">
+                        <div className="text-white text-4xl mb-2">{func.icon}</div>
+                        <h2 className="text-sm sm:text-md font-semibold text-white">{func.title}</h2>
+                      </div>
+
+                      {/* Lado trasero */}
+                      <div className="flip-back bg-teal-600 rounded-lg shadow-lg text-center flex flex-col items-center justify-center">
+                        {/* Íconos específicos para cada funcionalidad */}
+                        {func.title === "Subir Archivo" && (
+                          <CloudArrowUpIcon className="w-8 h-8 text-white mb-2" />
+                        )}
+                        {func.title === "Registrar disputas" && (
+                          <DocumentTextIcon className="w-8 h-8 text-white mb-2" />
+                        )}
+                        {func.title === "Historial de Transferencias" && (
+                          <ListBulletIcon className="w-8 h-8 text-white mb-2" />
+                        )}
+                        {func.title === "Visualizar disputas" && (
+                          <MagnifyingGlassCircleIcon className="w-8 h-8 text-white mb-2" />
+                        )}
+                      </div>
+                    </div>
                   </div>
+
                 </div>
               </div>
             </div>
@@ -185,7 +223,7 @@ function Dashboard() {
 
 
 
-  
+
       {/* Listado de archivos (1/4 del espacio, largo completo) */}
       <div className="relative z-10 w-full sm:w-1/4 bg-gray-900 bg-opacity-70 p-4 sm:p-6 text-white max-h-screen flex flex-col">
         <h2 className="text-lg font-light mb-4">Archivos registrados</h2>
@@ -205,12 +243,30 @@ function Dashboard() {
                   className="bg-gray-800 p-3 rounded-md shadow-md hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => handleFileClick(archivo)}
                 >
-                  <h3 className="text-md font-bold">{archivo.titulo}</h3>
+                  <h3 className="text-md font-bold">
+                    {/* Verificación de acceso antes de mostrar el enlace */}
+                    {archivo.tieneAcceso ? (
+                      <a
+                        href={`http://127.0.0.1:8081/ipfs/${archivo.hash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-teal-400 hover:text-teal-200"
+                      >
+                        {archivo.titulo}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">{archivo.titulo} (Acceso restringido)</span>
+                    )}
+                  </h3>
                   <p className="text-sm text-gray-300">{archivo.descripcion}</p>
                   <p className="text-xs text-gray-400 mt-2">
                     Fecha de subida: {archivo.fecha ? new Date(archivo.fecha * 1000).toLocaleString() : 'Fecha no disponible'}
                     <p className="text-xs text-gray-500 mt-2"></p>
                     TokenId: {archivo.tokenId}
+                    <p className="text-xs text-gray-600 mt-2"></p>
+                    Hash: {archivo.hash}
+                    <p className="text-xs text-gray-600 mt-2"></p>
+                    propietario: {archivo.direccionPropietario}
                   </p>
                 </li>
               ))}
@@ -219,7 +275,7 @@ function Dashboard() {
         </div>
       </div>
 
-  
+
       {/* Modales (Subir archivo, Registrar Disputa, etc.) */}
       {isModalOpen && modalType === "upload" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
@@ -228,7 +284,7 @@ function Dashboard() {
           </div>
         </div>
       )}
-  
+
       {isModalOpen && modalType === "registrarDisputa" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
@@ -238,7 +294,7 @@ function Dashboard() {
       )}
 
 
-  
+
       {isModalOpen && modalType === "visualizarDisputas" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur ">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
@@ -246,15 +302,15 @@ function Dashboard() {
           </div>
         </div>
       )}
-  
+
       {isModalOpen && modalType === "recursosPropietario" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
-            <RecursosPropietario closeModal={closeModal} />
+            <RecursosPropietario closeModal={closeModal} selectedFile={selectedFile} />
           </div>
         </div>
       )}
-  
+
       {isModalOpen && modalType === "historialTransferencias" && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-blur">
           <div className="bg-blue-gray-900 text-white rounded-lg shadow-lg p-8 w-96 relative max-w-lg mx-auto">
@@ -264,7 +320,7 @@ function Dashboard() {
       )}
     </div>
   );
-  
+
 }
 
 export default Dashboard;
