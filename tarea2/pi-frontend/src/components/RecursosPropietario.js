@@ -47,7 +47,8 @@ function RecursosPropietario({ closeModal, selectedFile }) {
   const transferirPropiedad = async (e) => {
     e.preventDefault();
 
-    if (!nuevoPropietario) {
+    if (!nuevoPropietario || !ethers.utils.isAddress(nuevoPropietario)) {
+      setErrorMessage("La dirección proporcionada no es válida.");
       return;
     }
 
@@ -99,6 +100,10 @@ function RecursosPropietario({ closeModal, selectedFile }) {
       setErrorMessage("Por favor, complete todos los campos.");
       return;
     }
+    if (!ethers.utils.isAddress(usuarioAcceso)) {
+      setErrorMessage("La dirección proporcionada no es válida.");
+      return;
+    }
 
     setErrorMessage("");
     try {
@@ -121,6 +126,10 @@ function RecursosPropietario({ closeModal, selectedFile }) {
 
     if (!usuarioRevocar) {
       setErrorMessage("Por favor, complete todos los campos.");
+      return;
+    }
+    if (!ethers.utils.isAddress(usuarioAcceso)) {
+      setErrorMessage("La dirección proporcionada no es válida.");
       return;
     }
 
@@ -171,7 +180,7 @@ function RecursosPropietario({ closeModal, selectedFile }) {
     e.preventDefault();
 
     if (!hashActualCertificado) {
-      setErrorMessage("Por favor, ingrese el índice del archivo.");
+      setErrorMessage("Por favor, ingrese el hash del archivo.");
       return;
     }
 
@@ -187,7 +196,7 @@ function RecursosPropietario({ closeModal, selectedFile }) {
       setCertificado({ titulo, descripcion, hash, tiempo });
     } catch (error) {
       console.error("Error al consultar el certificado:", error.message);
-      setErrorMessage("Error al consultar el certificado. Asegúrate de que el índice sea válido.");
+      setErrorMessage("Error al consultar el certificado. Asegúrate de que el hash sea válido.");
     }
   };
 
@@ -208,8 +217,9 @@ function RecursosPropietario({ closeModal, selectedFile }) {
               type="submit"
               className="bg-teal-500 hover:bg-teal-600 text-white mt-4 py-2 px-4 rounded w-full"
             >
-              {"probar"}
+              {"Transferir propiedad"}
             </button>
+            {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
           </form></>);
       case "acceso":
         return (
@@ -229,6 +239,7 @@ function RecursosPropietario({ closeModal, selectedFile }) {
               >
                 Proporcionar acceso
               </button>
+              {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
             </form>
           </>
         );
@@ -250,6 +261,7 @@ function RecursosPropietario({ closeModal, selectedFile }) {
               >
                 Revocar acceso
               </button>
+              {errorMessage && <p className="text-red-500 mt-4">{errorMessage}</p>}
             </form>
           </>
         );

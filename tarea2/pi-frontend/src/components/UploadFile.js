@@ -42,6 +42,27 @@ function UploadFile({ closeModal }) {
     e.preventDefault();
   };
 
+  // Comprobar si MetaMask está conectada o solicitar permiso
+  const checkMetaMaskConnection = async () => {
+    try {
+      if (!window.ethereum) {
+        throw new Error("MetaMask no está instalada.");
+      }
+
+      // Solicitar conexión a MetaMask
+      const accounts = await window.ethereum.enable();
+      if (accounts.length === 0) {
+        throw new Error("MetaMask no está conectada.");
+      }
+
+      return accounts[0]; // Devuelve la dirección de la cuenta conectada
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  };
+
+
+
   // Subir archivo a IPFS y registrarlo en Ethereum
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -55,12 +76,26 @@ function UploadFile({ closeModal }) {
     setErrorMessage(""); // Reiniciar mensajes de error
 
     try {
+      // Verificar conexión a MetaMask o solicitar permiso
+      const account = await checkMetaMaskConnection();
+      console.log(`Conectado a MetaMask con la cuenta: ${account}`);
+
       // Cliente IPFS (conexión a tu nodo local)
       const client = await create("/ip4/127.0.0.1/tcp/5002"); // Conexión IPFS local
 
       const result = await client.add(file);
 
-      await client.files.cp(`/ipfs/${result.cid}`, `/${result.cid}`)
+      try {
+        await client.files.cp(`/ipfs/${result.cid}`, `/${result.cid}`);
+      } catch (error) {
+        if (error.message && error.message.includes('directory already has entry by that name')) {
+          setErrorMessage('El archivo ya está registrado en IPFS.'); // Actualizamos el estado con el error específico
+          throw new Error('El archivo ya está registrado en IPFS.'); // Lanzar un error personalizado
+        } else {
+          setErrorMessage('Hubo un problema al registrar el archivo en IPFS.');
+          throw error;
+        }
+      }
 
       // Registrar el archivo en el contrato de Ethereum
       const signer = defaultProvider.getSigner();
