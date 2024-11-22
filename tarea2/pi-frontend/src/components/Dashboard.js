@@ -225,7 +225,7 @@ function Dashboard() {
 
 
       {/* Listado de archivos (1/4 del espacio, largo completo) */}
-      <div className="relative z-10 w-full sm:w-1/4 bg-gray-900 bg-opacity-70 p-4 sm:p-6 text-white max-h-screen flex flex-col">
+      <div className="relative z-10 w-full sm:w-1/3 bg-gray-900 bg-opacity-70 p-4 sm:p-6 text-white max-h-screen flex flex-col">
         <h2 className="text-lg font-light mb-4">Archivos registrados</h2>
         <p className="text-sm mb-4">
           Total de archivos registrados: <span className="font-bold text-teal-400">{archivosCount}</span>

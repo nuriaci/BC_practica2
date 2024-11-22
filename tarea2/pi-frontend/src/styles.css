@@ -3,23 +3,29 @@
 @tailwind utilities;
 
 @layer components {
+
   /* Efecto Flip */
   .flip-card {
-    perspective: 1000px; /* Necesario para crear el efecto 3D */
+    perspective: 1000px;
+    /* Necesario para crear el efecto 3D */
   }
 
   .flip-inner {
-    transform-style: preserve-3d; /* Mantiene las caras */
-    transition: transform 0.6s; /* Duración del flip */
+    transform-style: preserve-3d;
+    /* Mantiene las caras */
+    transition: transform 0.6s;
+    /* Duración del flip */
   }
 
   .group:hover .flip-inner {
-    transform: rotateY(180deg); /* Gira al hacer hover */
+    transform: rotateY(180deg);
+    /* Gira al hacer hover */
   }
 
   .flip-front,
   .flip-back {
-    backface-visibility: hidden; /* Oculta el contenido del lado opuesto */
+    backface-visibility: hidden;
+    /* Oculta el contenido del lado opuesto */
     position: absolute;
     top: 0;
     left: 0;
@@ -31,7 +37,8 @@
   }
 
   .flip-back {
-    transform: rotateY(180deg); /* El lado trasero está girado inicialmente */
+    transform: rotateY(180deg);
+    /* El lado trasero está girado inicialmente */
   }
 
   /* Animación del fondo del modal (blur y fade-in) */
@@ -40,6 +47,7 @@
       opacity: 0;
       backdrop-filter: blur(0);
     }
+
     to {
       opacity: 1;
       backdrop-filter: blur(8px);
@@ -56,6 +64,7 @@
       transform: scale(0.5);
       opacity: 0;
     }
+
     to {
       transform: scale(1);
       opacity: 1;
@@ -67,20 +76,21 @@
   }
 
   /* Animación de desvanecimiento */
-    @keyframes fadeInOut {
-        0% {
-        opacity: 0;
-        transform: translateY(-10px);
-        }
-        100% {
-        opacity: 1;
-        transform: translateY(0);
-        }
+  @keyframes fadeInOut {
+    0% {
+      opacity: 0;
+      transform: translateY(-10px);
     }
-    
-    /* Clase de animación */
-    .animate-fadeInOut {
-        animation: fadeInOut 0.5s ease-in-out forwards;
+
+    100% {
+      opacity: 1;
+      transform: translateY(0);
     }
-  
+  }
+
+  /* Clase de animación */
+  .animate-fadeInOut {
+    animation: fadeInOut 0.5s ease-in-out forwards;
+  }
+
 }
